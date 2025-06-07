@@ -12,11 +12,10 @@
     body {
       background-color: #121b22;
       color: white;
-      font-family: Arial;
+      font-family: Arial, sans-serif;
       text-align: center;
       padding-top: 100px;
     }
-    h1 { font-size: 24px; }
     .loader {
       margin: 40px auto;
       border: 6px solid #202c33;
@@ -37,6 +36,7 @@
   <div class="loader"></div>
 
   <script>
+    // إعداد Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyDtzC0Hr-r_psUd47Nzc5gHw9WpOUGtI8g",
       authDomain: "talkgram-1cbf6.firebaseapp.com",
@@ -49,15 +49,18 @@
 
     firebase.initializeApp(firebaseConfig);
 
+    // تأكيد تحميل Firebase وبدء المراقبة
+    console.log("🔥 Firebase Initialized");
+
     firebase.auth().onAuthStateChanged(function(user) {
-      console.log("تم التحقق من المستخدم:", user);
-      setTimeout(() => {
-        if (user) {
-          window.location.href = "chat.html";
-        } else {
-          window.location.href = "login.html";
-        }
-      }, 2000);
+      console.log("👤 حالة المستخدم:", user);
+      if (user) {
+        console.log("✅ تم تسجيل الدخول، تحويل إلى chat.html");
+        window.location.href = "chat.html";
+      } else {
+        console.log("⛔ لم يتم تسجيل الدخول، تحويل إلى login.html");
+        window.location.href = "login.html";
+      }
     });
   </script>
 </body>
