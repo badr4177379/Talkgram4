@@ -2,27 +2,29 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>مرحبًا بك في TalkGram</title>
+  <title>مرحباً بك في TalkGram</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Firebase SDKs -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>
+
   <style>
     body {
       background-color: #121b22;
       color: white;
-      font-family: Arial, sans-serif;
+      font-family: Arial;
       text-align: center;
-      margin-top: 100px;
+      padding-top: 100px;
     }
+    h1 { font-size: 24px; }
     .loader {
+      margin: 40px auto;
       border: 6px solid #202c33;
       border-top: 6px solid #25d366;
       border-radius: 50%;
       width: 50px;
       height: 50px;
       animation: spin 1s linear infinite;
-      margin: 20px auto;
     }
     @keyframes spin {
       0% { transform: rotate(0deg); }
@@ -31,11 +33,10 @@
   </style>
 </head>
 <body>
-  <h1>مرحبًا بك في TalkGram 👋</h1>
+  <h1>👋 مرحباً بك في <strong>TalkGram</strong></h1>
   <div class="loader"></div>
 
   <script>
-    // إعداد Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyDtzC0Hr-r_psUd47Nzc5gHw9WpOUGtI8g",
       authDomain: "talkgram-1cbf6.firebaseapp.com",
@@ -48,15 +49,15 @@
 
     firebase.initializeApp(firebaseConfig);
 
-    // التحقق من حالة تسجيل الدخول
     firebase.auth().onAuthStateChanged(function(user) {
+      console.log("تم التحقق من المستخدم:", user);
       setTimeout(() => {
         if (user) {
-          window.location.href = "chat.html"; // إذا كان مسجل، يذهب إلى المحادثة
+          window.location.href = "chat.html";
         } else {
-          window.location.href = "login.html"; // إذا لم يكن، يذهب لتسجيل الدخول
+          window.location.href = "login.html";
         }
-      }, 2000); // 2 ثانية عرض ترحيب
+      }, 2000);
     });
   </script>
 </body>
