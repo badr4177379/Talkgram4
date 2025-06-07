@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>تسجيل الدخول - TalkGram</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>
+  <style>
+    body {
+      background-color: #121b22;
+      color: white;
+      font-family: Arial;
+      text-align: center;
+      padding-top: 50px;
+    }
+    input {
+      padding: 10px;
+      margin: 10px;
+      border-radius: 6px;
+      border: none;
+      width: 80%;
+      font-size: 16px;
+    }
+    button {
+      background-color: #25d366;
+      color: white;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h2>تسجيل الدخول إلى TalkGram</h2>
+  <input type="text" id="phoneNumber" placeholder="أدخل رقم هاتفك +967..." /><br>
+  <div id="recaptcha-container"></div>
+  <button onclick="sendCode()">إرسال الكود</button><br><br>
+
+  <input type="text" id="verificationCode" placeholder="أدخل الكود هنا" /><br>
+  <button onclick="verifyCode()">تأكيد الكود</button>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDtzC0Hr-r_psUd47Nzc5gHw9WpOUGtI8g",
+      authDomain: "talkgram-1cbf6.firebaseapp.com",
+      databaseURL: "https://talkgram-1cbf6-default-rtdb.firebaseio.com",
+      projectId: "talkgram-1cbf6",
+      storageBucket: "talkgram-1cbf6.appspot.com",
+      messagingSenderId: "147138045368",
+      appId: "1:147138045368:web:0b9bc88a512f382c1d1b4d"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+
+    // إعداد reCAPTCHA
+    window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+      'size': 'normal',
+      'callback': function(response) {}
+    });
+
+    let confirmationResult;
+
+    function sendCode() {
+      const phone = document.getElementById("phoneNumber").value;
+      firebase.auth().signInWithPhoneNumber(phone, window.recaptchaVerifier)
+        .then((result) => {
+          confirmationResult = result;
+          alert("✅ تم إرسال الكود");
+        }).catch((error) => {
+          alert("❌ خطأ: " + error.message);
+        });
+    }
+
+    function verifyCode() {
+      const code = document.getElementById("verificationCode").value;
+      confirmationResult.confirm(code).then((result) => {
+        alert("✅ تم تسجيل الدخول");
+        window.location.href = "profile.html";
+      }).catch((error) => {
+        alert("❌ الكود غير صحيح");
+      });
+    }
+  </script>
+</body>
+</html>
