@@ -1,116 +1,63 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>دردشة خاصة بين المستخدمين</title>
+  <meta charset="UTF-8">
+  <title>مرحبًا بك في TalkGram</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; background: #f7f7f7; padding: 20px; }
-    .chat-container { max-width: 500px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; }
-    .messages { max-height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
-    .message { padding: 5px; margin: 5px 0; border-radius: 5px; }
-    .sent { background-color: #dcf8c6; text-align: right; }
-    .received { background-color: #fff; border: 1px solid #ddd; text-align: left; }
-    input, button { padding: 10px; margin: 5px 0; width: 100%; }
+    body {
+      background-color: #121b22;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 100px;
+    }
+    .loader {
+      border: 6px solid #202c33;
+      border-top: 6px solid #25d366;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
-  <div class="chat-container">
-    <h2>دردشة خاصة</h2>
-    <div>
-      <input type="email" id="email" placeholder="البريد الإلكتروني" />
-      <input type="password" id="password" placeholder="كلمة المرور" />
-      <button onclick="signIn()">تسجيل الدخول</button>
-      <button onclick="signUp()">إنشاء حساب</button>
-    </div>
-    <hr />
-    <input type="text" id="recipient" placeholder="اسم المستخدم المستلم" />
-    <div class="messages" id="messages"></div>
-    <input type="text" id="messageInput" placeholder="اكتب رسالة" />
-    <button onclick="sendMessage()">إرسال</button>
-    <button onclick="signOut()">تسجيل الخروج</button>
-  </div>
+  <h1>مرحبًا بك في TalkGram 👋</h1>
+  <div class="loader"></div>
 
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
   <script>
+    // إعداد Firebase
     const firebaseConfig = {
-      apiKey: "AIzaSyChBJV56XEk4iEUJYA39DAmxJVuj8g5P9k",
-      authDomain: "badrbadr775-8a858.firebaseapp.com",
-      databaseURL: "https://badrbadr775-8a858-default-rtdb.firebaseio.com",
-      projectId: "badrbadr775-8a858",
-      storageBucket: "badrbadr775-8a858.appspot.com",
-      messagingSenderId: "246499810028",
-      appId: "1:246499810028:web:02a914e5d0727b356ba3c9"
+      apiKey: "AIzaSyDtzC0Hr-r_psUd47Nzc5gHw9WpOUGtI8g",
+      authDomain: "talkgram-1cbf6.firebaseapp.com",
+      databaseURL: "https://talkgram-1cbf6-default-rtdb.firebaseio.com",
+      projectId: "talkgram-1cbf6",
+      storageBucket: "talkgram-1cbf6.appspot.com",
+      messagingSenderId: "147138045368",
+      appId: "1:147138045368:web:0b9bc88a512f382c1d1b4d"
     };
 
     firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.database();
 
-    let currentUser = null;
-
-    function signUp() {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      auth.createUserWithEmailAndPassword(email, password)
-        .then(user => alert("تم إنشاء الحساب"))
-        .catch(e => alert(e.message));
-    }
-
-    function signIn() {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      auth.signInWithEmailAndPassword(email, password)
-        .then(user => {
-          currentUser = user.user;
-          listenForMessages();
-        })
-        .catch(e => alert(e.message));
-    }
-
-    function signOut() {
-      auth.signOut().then(() => {
-        alert("تم تسجيل الخروج");
-        document.getElementById("messages").innerHTML = "";
-        currentUser = null;
-      });
-    }
-
-    function getChatId(user1, user2) {
-      return [user1, user2].sort().join("_");
-    }
-
-    function sendMessage() {
-      const recipient = document.getElementById("recipient").value.trim();
-      const messageText = document.getElementById("messageInput").value.trim();
-      if (!recipient || !messageText || !currentUser) return;
-
-      const chatId = getChatId(currentUser.email, recipient);
-      const msg = {
-        sender: currentUser.email,
-        text: messageText,
-        timestamp: Date.now()
-      };
-      db.ref("chats/" + chatId).push(msg);
-      document.getElementById("messageInput").value = "";
-    }
-
-    function listenForMessages() {
-      const recipient = document.getElementById("recipient");
-      recipient.addEventListener("input", () => {
-        const chatId = getChatId(currentUser.email, recipient.value.trim());
-        db.ref("chats/" + chatId).off();
-        db.ref("chats/" + chatId).on("child_added", snapshot => {
-          const msg = snapshot.val();
-          const msgDiv = document.createElement("div");
-          msgDiv.className = "message " + (msg.sender === currentUser.email ? "sent" : "received");
-          msgDiv.textContent = msg.text;
-          document.getElementById("messages").appendChild(msgDiv);
-        });
-      });
-    }
+    // التحقق من حالة تسجيل الدخول
+    firebase.auth().onAuthStateChanged(function(user) {
+      setTimeout(() => {
+        if (user) {
+          window.location.href = "chat.html"; // إذا كان مسجل، يذهب إلى المحادثة
+        } else {
+          window.location.href = "login.html"; // إذا لم يكن، يذهب لتسجيل الدخول
+        }
+      }, 2000); // 2 ثانية عرض ترحيب
+    });
   </script>
 </body>
 </html>
