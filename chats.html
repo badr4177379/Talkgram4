@@ -1,0 +1,121 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>المحادثات - Talkgram</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Tahoma", sans-serif;
+      background-color: #111b21;
+      color: white;
+    }
+
+    header {
+      background-color: #202c33;
+      padding: 16px;
+      text-align: center;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .chat-list {
+      padding: 10px;
+    }
+
+    .chat-item {
+      background-color: #1e2a30;
+      border-bottom: 1px solid #2d3e44;
+      padding: 12px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .chat-item:hover {
+      background-color: #25353c;
+    }
+
+    .chat-item img {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      margin-left: 10px;
+    }
+
+    .chat-info h4 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .chat-info p {
+      margin: 4px 0 0;
+      color: #ccc;
+      font-size: 14px;
+    }
+
+    .tab-bar {
+      background-color: #202c33;
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0;
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      border-top: 1px solid #2d3e44;
+    }
+
+    .tab-bar div {
+      color: #ccc;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .tab-bar .active {
+      color: #25d366;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+<header>Talkgram - المحادثات</header>
+
+<div class="chat-list">
+  <div class="chat-item" onclick="location.href='chat1.html'">
+    <img src="https://via.placeholder.com/48" alt="User">
+    <div class="chat-info">
+      <h4>أحمد محمد</h4>
+      <p>أهلاً! كيف الحال؟</p>
+    </div>
+  </div>
+
+  <div class="chat-item" onclick="location.href='chat2.html'">
+    <img src="https://via.placeholder.com/48" alt="User">
+    <div class="chat-info">
+      <h4>نورة خالد</h4>
+      <p>هل وصلت الرسالة؟</p>
+    </div>
+  </div>
+
+  <div class="chat-item" onclick="location.href='chat3.html'">
+    <img src="https://via.placeholder.com/48" alt="User">
+    <div class="chat-info">
+      <h4>فريق الدعم</h4>
+      <p>تم تحديث التطبيق بنجاح ✅</p>
+    </div>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <div class="active" onclick="location.href='chats.html'">المحادثات</div>
+  <div onclick="location.href='status.html'">الحالة</div>
+  <div onclick="location.href='calls.html'">المكالمات</div>
+  <div onclick="location.href='settings.html'">الإعدادات</div>
+</div>
+
+</body>
+</html>

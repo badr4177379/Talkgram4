@@ -1,0 +1,98 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>تطبيق دردشة Firebase</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+</head>
+<body>
+  <h2>تسجيل الدخول</h2>
+  <input type="email" id="email" placeholder="البريد الإلكتروني"><br>
+  <input type="password" id="password" placeholder="كلمة المرور"><br>
+  <button onclick="login()">تسجيل الدخول</button>
+  <h2>أرسل رسالة</h2>
+  <input type="text" id="toUser" placeholder="اسم المستخدم الآخر"><br>
+  <input type="text" id="message" placeholder="اكتب رسالتك">
+  <button onclick="sendMessage()">إرسال</button>
+  <ul id="messages"></ul>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyChBJV56XEk4iEUJYA39DAmxJVuj8g5P9k",
+    authDomain: "badrbadr775-8a858.firebaseapp.com",
+    databaseURL: "https://badrbadr775-8a858-default-rtdb.firebaseio.com",
+    projectId: "badrbadr775-8a858",
+    storageBucket: "badrbadr775-8a858.appspot.com",
+    messagingSenderId: "246499810028",
+    appId: "1:246499810028:web:02a914e5d0727b356ba3c9"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.database();
+
+  let currentUserEmail = "";
+
+  function login() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    auth.signInWithEmailAndPassword(email, password)
+      .then(user => {
+        currentUserEmail = email;
+        alert("تم تسجيل الدخول");
+        listenMessages();
+      })
+      .catch(error => alert("خطأ: " + error.message));
+  }
+
+  function sendMessage() {
+    const toUser = document.getElementById("toUser").value.trim();
+    const message = document.getElementById("message").value;
+    if (!toUser || !message || !currentUserEmail) return;
+
+    const chatId = generateChatId(currentUserEmail, toUser);
+    const msgObj = {
+      from: currentUserEmail,
+      to: toUser,
+      text: message,
+      timestamp: Date.now()
+    };
+    db.ref("chats/" + chatId).push(msgObj);
+    document.getElementById("message").value = "";
+  }
+
+  function listenMessages() {
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        db.ref("chats").on("child_added", snapshot => {
+          const chatId = snapshot.key;
+          if (chatId.includes(getUsernameFromEmail(currentUserEmail))) {
+            db.ref("chats/" + chatId).on("child_added", snap => {
+              const msg = snap.val();
+              if (msg.to === currentUserEmail || msg.from === currentUserEmail) {
+                const li = document.createElement("li");
+                li.textContent = msg.from + ": " + msg.text;
+                document.getElementById("messages").appendChild(li);
+              }
+            });
+          }
+        });
+      }
+    });
+  }
+
+  function generateChatId(user1, user2) {
+    const u1 = getUsernameFromEmail(user1).toLowerCase();
+    const u2 = getUsernameFromEmail(user2).toLowerCase();
+    return u1 < u2 ? u1 + "_" + u2 : u2 + "_" + u1;
+  }
+
+  function getUsernameFromEmail(email) {
+    return email.split("@")[0];
+  }
+</script>
+</body>
+</html>

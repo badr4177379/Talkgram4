@@ -1,0 +1,32 @@
+
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Talkgram Web Firebase</title>
+    <!-- ... rest of the HEAD remains unchanged ... -->
+</head>
+<body>
+    <!-- ... existing HTML content remains unchanged ... -->
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>
+
+    <script>
+        // ✅ تم استبدال الإعدادات هنا
+        const firebaseConfig = {
+            apiKey: "AIzaSyC_2C5K8Gjdm3cI5v7lM-dBkn_8eQfKIC4",
+            authDomain: "talkgram2.firebaseapp.com",
+            databaseURL: "https://talkgram2-default-rtdb.firebaseio.com",
+            projectId: "talkgram2",
+            storageBucket: "talkgram2.firebasestorage.app",
+            messagingSenderId: "196126389993",
+            appId: "1:196126389993:android:d83f4de842423f4f602278"
+        };
+        firebase.initializeApp(firebaseConfig);
+    </script>
+</body>
+</html>

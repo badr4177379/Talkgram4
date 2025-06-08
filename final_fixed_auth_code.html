@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>تطبيق الدردشة - تسجيل الدخول</title>
+<style>
+        /* === General Styles === */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            direction: rtl;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 20px 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+            overflow-y: auto; 
+            max-height: 95vh; 
+        }
+
+        h2, h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            text-align: right;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #555;
+        }
+
+        .form-group input[type="email"],
+        .form-group input[type="password"],
+        .form-group input[type="text"],
+        .form-group input[type="file"] {
+            width: calc(100% - 22px);
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 15px;
+            box-sizing: border-box;
+        }
+        .form-group input[type="file"] {
+             padding: 3px;
+        }
+
+        .btn {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 18px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            transition: background-color 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        
+        .logout-btn, .secondary-btn {
+            margin-top: 20px;
+            background-color: #6c757d;
+        }
+        .logout-btn:hover, .secondary-btn:hover {
+            background-color: #5a6268;
+        }
+        .logout-btn { background-color: #dc3545; }
+        .logout-btn:hover { background-color: #c82333; }
+
+
+        .toggle-link,
+        .forgot-password-link {
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        .toggle-link a,
+        .forgot-password-link a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .toggle-link a:hover,
+        .forgot-password-link a:hover {
+            text-decoration: underline;
+        }
+
+        .message-area {
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 5px;
+            font-size: 14px;
+            min-height: 18px;
+        }
+
+        .message-area.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .message-area.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+        .hidden { display: none !important; }
+
+        /* === Profile Setup Specific === */
+        .profile-setup-content, .chats-content {
+            text-align: center;
+            padding-top: 20px;
+        }
+        .profile-setup-content h1, .chats-content h1 { 
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .profile-setup-content p, .chats-content p {
+            font-size: 16px;
+            color: #555;
+            margin-bottom: 10px;
+        }
+        #cover-photo-preview {
+            width: 100%;
+            height: 150px;
+            background-color: #e9ecef;
+            border: 1px dashed #ced4da;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+            background-size: cover;
+            background-position: center;
+        }
+
+        /* === App Header (for Chats Section & Chat View) === */
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+        }
+        .app-header h1#app-title, /* العنوان الرئيسي في تبويب الدردشات */
+        .chat-view-header h1 /* عنوان اسم جهة الاتصال في شاشة المحادثة */ { 
+            margin: 0;
+            font-size: 20px;
+            color: white;
+        }
+        .header-actions .icon-btn,
+        .chat-view-header > .icon-btn:first-child /* زر الرجوع */ {
+            background: none;
+            border: none;
+            color: white;
+            padding: 5px;
+            margin-left: 10px;
+            cursor: pointer;
+            font-size: 22px; /* حجم موحد للأيقونات */
+        }
+        .header-actions .icon-btn img,
+        .chat-view-header .icon-btn img { /* إذا كنت تستخدم صورًا */
+            width: 24px;
+            height: 24px;
+            filter: brightness(0) invert(1);
+        }
+         .chat-view-header > .icon-btn:first-child { /* تخصيص زر الرجوع */
+            margin-left: 0;
+            margin-right: 8px;
+        }
+
+
+        /* === Tabs === */
+        .tabs-container {
+            display: flex;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .tab-link {
+            flex-grow: 1;
+            padding: 12px 10px;
+            text-align: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+            color: #495057;
+            border-bottom: 3px solid transparent;
+            transition: color 0.2s, border-bottom-color 0.2s;
+        }
+        .tab-link:hover {
+            color: #0056b3;
+        }
+        .tab-link.active {
+            color: #007bff;
+            border-bottom-color: #007bff;
+            font-weight: bold;
+        }
+
+        /* === Tab Content === */
+        .tab-content-wrapper {
+            padding: 15px;
+             /* لإعطاء مساحة للـ FAB إذا كان الـ position:fixed */
+            /* padding-bottom: 80px;  */
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+
+        /* === Chat List (Example) === */
+        .chat-list-ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .chat-list-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+        .chat-list-item:hover {
+            background-color: #f8f9fa;
+        }
+        .chat-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-left: 15px; 
+            object-fit: cover;
+            background-color: #ccc;
+        }
+        .chat-info {
+            flex-grow: 1;
+            text-align: right;
+        }
+        .chat-name {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 3px;
+        }
+        .chat-last-message {
+            font-size: 14px;
+            color: #666;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+        .chat-meta {
+            text-align: left; 
+            font-size: 12px;
+            color: #888;
+            margin-right: 10px; 
+        }
+        .chat-time {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .unread-count {
+            background-color: #25D366;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 11px;
+            min-width: 18px;
+            text-align: center;
+            display: inline-block;
+        }
+
+        /* === Floating Action Button (FAB) === */
+        .fab {
+            position: absolute; 
+            bottom: 15px; 
+            width: 56px;
+            height: 56px;
+            background-color: #007bff;
+            color: white;
+            border-radius: 50%;
+            border: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 20;
+        }
+        .fab img { /* إذا كنت تستخدم صورًا للأيقونات داخل FAB */
+            filter: brightness(0) invert(1);
+        }
+        html[dir="rtl"] .fab {
+            left: auto;
+            right: 15px; 
+        }
+        html[dir="rtl"] .chat-meta {
+            text-align: right;
+            margin-right: 0;
+            margin-left: 10px;
+        }
+        html[dir="rtl"] .chat-avatar {
+            margin-left: 0;
+            margin-right: 15px;
+        }
+        
+        /* === Chat View Section Specific === */
+        .chat-view-header { /* استخدمناه سابقًا، تأكيد التنسيق */
+            padding: 8px 10px; 
+        }
+        .chat-view-contact-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-left: 10px;
+            margin-right: 10px;
+            background-color: #ccc; /* لون افتراضي */
+        }
+        .chat-view-contact-info {
+            flex-grow: 1;
+            text-align: right;
+            color: white;
+        }
+        .chat-view-contact-info h1#chat-view-contact-name { /* استهداف اسم جهة الاتصال */
+            font-size: 18px;
+            margin: 0;
+            color: white;
+        }
+        .chat-view-contact-info small#chat-view-contact-status {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .messages-container {
+            flex-grow: 1; 
+            padding: 15px;
+            overflow-y: auto; 
+            display: flex;
+            flex-direction: column;
+            background-color: #f7f7f7; /* لون خلفية أفتح قليلاً للرسائل */
+        }
+
+        .message-item {
+            display: flex;
+            margin-bottom: 10px;
+            max-width: 75%; 
+        }
+        .message-item.sent {
+            align-self: flex-start; 
+            margin-left: auto; 
+        }
+        html[dir="rtl"] .message-item.sent {
+            align-self: flex-end;
+            margin-left: 0;
+            margin-right: auto; 
+        }
+
+        .message-item.received {
+            align-self: flex-end; 
+            margin-right: auto; 
+        }
+        html[dir="rtl"] .message-item.received {
+            align-self: flex-start;
+            margin-right: 0;
+            margin-left: auto; 
+        }
+
+
+        .message-bubble {
+            padding: 8px 12px;
+            border-radius: 18px;
+            font-size: 15px;
+            line-height: 1.4;
+            word-wrap: break-word; 
+        }
+        .message-item.sent .message-bubble {
+            background-color: #dcf8c6; 
+            border-top-left-radius: 0; 
+        }
+        html[dir="rtl"] .message-item.sent .message-bubble {
+            border-top-left-radius: 18px; 
+            border-top-right-radius: 0; 
+        }
+
+        .message-item.received .message-bubble {
+            background-color: #ffffff; 
+            box-shadow: 0 1px 1px rgba(0,0,0,0.05);
+            border-top-right-radius: 0;
+        }
+        html[dir="rtl"] .message-item.received .message-bubble {
+            border-top-right-radius: 18px; 
+            border-top-left-radius: 0; 
+        }
+
+        .message-text {
+            margin: 0 0 5px 0;
+        }
+        .message-timestamp {
+            font-size: 11px;
+            color: #808080b3; 
+            text-align: left; 
+            display: block;
+        }
+        html[dir="rtl"] .message-timestamp {
+            text-align: right;
+        }
+        .message-status {
+            margin-right: 3px; 
+            color: #4fc3f7; 
+        }
+        html[dir="rtl"] .message-status {
+            margin-right: 0;
+            margin-left: 3px;
+        }
+
+        .message-input-area {
+            display: flex;
+            align-items: center;
+            padding: 8px 10px;
+            background-color: #f0f0f0; 
+            border-top: 1px solid #ddd;
+        }
+        #message-input-field {
+            flex-grow: 1;
+            padding: 10px 12px;
+            border: 1px solid #ccc;
+            border-radius: 20px; 
+            margin: 0 8px;
+            font-size: 15px;
+            background-color: white;
+        }
+        .message-input-area .icon-btn {
+            background: none;
+            border: none;
+            padding: 8px;
+            cursor: pointer;
+            font-size: 24px; 
+            color: #555;
+        }
+        .message-input-area .send-btn {
+            color: #007bff; 
+        }
+
+        /* Typing Indicator */
+        .typing-indicator .message-bubble {
+            padding: 10px 15px; 
+        }
+        .typing-dots span {
+            height: 8px;
+            width: 8px;
+            background-color: #aaa;
+            border-radius: 50%;
+            display: inline-block;
+            margin: 0 1px;
+            animation: typing-blink 1.4s infinite both;
+        }
+        .typing-dots span:nth-child(2) {
+            animation-delay: .2s;
+        }
+        .typing-dots span:nth-child(3) {
+            animation-delay: .4s;
+        }
+        @keyframes typing-blink {
+            0% { opacity: .2; }
+            20% { opacity: 1; }
+            100% { opacity: .2; }
+        }
+        
+        /* لجعل شاشة الدردشة تأخذ كامل ارتفاع الحاوية عند عرضها */
+        #chat-view-section.active { /* تم تعريفها كفئة الآن */
+            display: flex !important; /* استخدام !important لضمان الظهور */
+            flex-direction: column;
+            /* height: 100%;  تم التحكم به عبر الحاوية الأم */
+        }
+
+    </style>
+</head>
+<body>
+<div class="container">
+<!-- 1. قسم المصادقة -->
+<div id="auth-section">
+<div id="auth-form-container">
+<form class="auth-form" id="login-form">
+<h2>تسجيل الدخول</h2>
+<div class="form-group">
+<label for="login-email">البريد الإلكتروني:</label>
+<input id="login-email" name="email" required="" type="email" value="test@example.com"/>
+</div>
+<div class="form-group">
+<label for="login-password">كلمة المرور:</label>
+<input id="login-password" name="password" required="" type="password" value="password"/>
+</div>
+<button class="btn" type="submit">تسجيل الدخول</button>
+<p class="toggle-link">ليس لديك حساب؟ <a href="#" id="show-signup">إنشاء حساب جديد</a></p>
+</form>
+<form class="auth-form hidden" id="signup-form">
+<h2>إنشاء حساب جديد</h2>
+<div class="form-group">
+<label for="signup-displayname-initial">اسم العرض الأولي:</label>
+<input id="signup-displayname-initial" name="displayname_initial" required="" type="text"/>
+</div>
+<div class="form-group">
+<label for="signup-email">البريد الإلكتروني:</label>
+<input id="signup-email" name="email" required="" type="email"/>
+</div>
+<div class="form-group">
+<label for="signup-password">كلمة المرور:</label>
+<input id="signup-password" minlength="6" name="password" required="" type="password"/>
+</div>
+<div class="form-group">
+<label for="signup-confirm-password">تأكيد كلمة المرور:</label>
+<input id="signup-confirm-password" name="confirm_password" required="" type="password"/>
+</div>
+<button class="btn" type="submit">إنشاء حساب</button>
+<p class="toggle-link">لديك حساب بالفعل؟ <a href="#" id="show-login">تسجيل الدخول</a></p>
+</form>
+</div>
+<div class="message-area" id="message-area"></div>
+</div>
+<!-- 2. قسم إعداد الملف الشخصي (بعد المصادقة) -->
+<div class="hidden" id="profile-setup-section">
+<div class="profile-setup-content">
+<h1>إعداد ملفك الشخصي</h1>
+<p>أكمل ملفك الشخصي للبدء.</p>
+<form id="profile-setup-form">
+<div class="form-group">
+<label for="username">اسم المستخدم (فريد):</label>
+<input id="username" name="username" placeholder="مثال: ahmad123" required="" type="text"/>
+<small>سيتمكن الآخرون من البحث عنك بهذا الاسم.</small>
+</div>
+<div class="form-group">
+<label for="cover-photo">صورة الخلفية (اختياري):</label>
+<input accept="image/*" id="cover-photo-input" name="cover_photo" type="file"/>
+<div id="cover-photo-preview">معاينة صورة الخلفية</div>
+</div>
+<button class="btn" type="submit">حفظ والانتقال للدردشات</button>
+</form>
+</div>
+</div>
+<!-- 3. قسم شاشة الدردشات الرئيسية -->
+<div class="hidden" id="chats-section">
+<div class="app-header">
+<h1 id="app-title">الدردشات</h1>
+<div class="header-actions">
+<button class="icon-btn" id="search-button" title="بحث">🔍</button>
+<button class="icon-btn" id="menu-button" title="قائمة">≡</button>
+</div>
+</div>
+<div class="tabs-container">
+<button class="tab-link active" data-tab="chats-tab-content">الدردشات</button>
+<button class="tab-link" data-tab="stories-tab-content">الحالات</button>
+<button class="tab-link" data-tab="calls-tab-content">المكالمات</button>
+</div>
+<div class="tab-content-wrapper">
+<div class="tab-content active" id="chats-tab-content">
+<p>مرحباً <span id="chat-user-display-name-tab">[اسم المستخدم]</span>!</p>
+<ul class="chat-list-ul" id="chat-list">
+<li class="chat-list-item" data-chatavatar="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MCIgaGVpZ2h0PSI1MCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNjY2MiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMjAgMjFoLTNBNCA0IDAgMCAxIDEzIDE3di0xYTQgNCAwIDAgMSAwLTh2LTFBNCA0IDAgMCAxIDE3IDNoM2EyIDIgMCAwIDEgMiAydjE2YTIgMiAwIDAgMS0yIDJ6Ij48L3BhdGg+PHBhdGggZD0iTTcgN2MwLTIuMjEgMS4yLTQgMy00aDBjMS44IDAgMyAxLjc5IDMgNHYxMEgzVjd6Ij48L3BhdGg+PC9zdmc+" data-chatid="friend1" data-chatname="صديق 1">
+<img alt="صورة" class="chat-avatar" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MCIgaGVpZ2h0PSI1MCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNjY2MiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMjAgMjFoLTNBNCA0IDAgMCAxIDEzIDE3di0xYTQgNCAwIDAgMSAwLTh2LTFBNCA0IDAgMCAxIDE3IDNoM2EyIDIgMCAwIDEgMiAydjE2YTIgMiAwIDAgMS0yIDJ6Ij48L3BhdGg+PHBhdGggZD0iTTcgN2MwLTIuMjEgMS4yLTQgMy00aDBjMS44IDAgMyAxLjc5IDMgNHYxMEgzVjd6Ij48L3BhdGg+PC9zdmc+"/>
+<div class="chat-info">
+<span class="chat-name">صديق 1</span>
+<span class="chat-last-message">مرحباً! كيف حالك؟</span>
+</div>
+<div class="chat-meta">
+<span class="chat-time">10:30 ص</span>
+<span class="unread-count">2</span>
+</div>
+</li>
+<li class="chat-list-item" data-chatavatar="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MCIgaGVpZ2h0PSI1MCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNjY2MiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMTcgMjFoLTRhMiAyIDAgMCAxLTItMlY3YTIgMiAwIDAgMSAyLTJoNG0tNCA4aDQuNThhMS40MiAxLjQyIDAgMCAxIDEuNDIgMS40MnYwYTEuNDIgMS40MiAwIDAgMS0xLjQyIDEuNDJIMTNNNyA5aDBtMCA0aDBtMCA0aDBiPjwvcGF0aD48cGF0aCBkPSJNNiAzaDRhMiAyIDAgMCAxIDIgMnYxNGMwIDEuMS0uOSAyLTIgMkg4Yy0xLjEgMC0yLS45LTItMlY1YTkgOSAwIDAgMSAyLTJ6Ij48L3BhdGg+PC9zdmc+" data-chatid="group1" data-chatname="مجموعة العمل">
+<img alt="صورة" class="chat-avatar" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MCIgaGVpZ2h0PSI1MCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNjY2MiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMTcgMjFoLTRhMiAyIDAgMCAxLTItMlY3YTIgMiAwIDAgMSAyLTJoNG0tNCA4aDQuNThhMS40MiAxLjQyIDAgMCAxIDEuNDIgMS40MnYwYTEuNDIgMS40MiAwIDAgMS0xLjQyIDEuNDJIMTNNNyA5aDBtMCA0aDBtMCA0aDBiPjwvcGF0aD48cGF0aCBkPSJNNiAzaDRhMiAyIDAgMCAxIDIgMnYxNGMwIDEuMS0uOSAyLTIgMkg4Yy0xLjEgMC0yLS45LTItMlY1YTkgOSAwIDAgMSAyLTJ6Ij48L3BhdGg+PC9zdmc+"/>
+<div class="chat-info">
+<span class="chat-name">مجموعة العمل</span>
+<span class="chat-last-message">أحمد: تم إرسال الملف.</span>
+</div>
+<div class="chat-meta">
+<span class="chat-time">أمس</span>
+</div>
+</li>
+</ul>
+<button class="fab" id="fab-new-chat" title="دردشة جديدة">+</button>
+</div>
+<div class="tab-content" id="stories-tab-content">
+<h2>الحالات (Stories)</h2>
+<p>هنا ستظهر حالات أصدقائك.</p>
+<div style="height: 200px; background-color: #f0f0f0; border:1px solid #ccc; display:flex; align-items:center; justify-content:center; margin-top:20px;">(قائمة الحالات)</div>
+<button class="fab" style="background-color: #25D366;" title="إضافة حالة جديدة">📷</button>
+</div>
+<div class="tab-content" id="calls-tab-content">
+<h2>المكالمات</h2>
+<p>هنا سيظهر سجل المكالمات.</p>
+<div style="height: 200px; background-color: #f0f0f0; border:1px solid #ccc; display:flex; align-items:center; justify-content:center; margin-top:20px;">(سجل المكالمات)</div>
+<button class="fab" style="background-color: #007bff;" title="إجراء مكالمة جديدة">📞</button>
+</div>
+</div>
+<button class="btn logout-btn" id="logoutButtonFromChatsMain" style="margin-top: 20px;">تسجيل الخروج</button>
+</div>
+<!-- 4. قسم شاشة المحادثة الفردية (Chat View) -->
+<div class="hidden" id="chat-view-section">
+<div class="app-header chat-view-header">
+<button class="icon-btn" id="back-to-chats-list-button">←</button>
+<img alt="صورة" class="chat-view-contact-avatar" id="chat-view-avatar" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNjY2MiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMjAgMjFoLTNBNCA0IDAgMCAxIDEzIDE3di0xYTQgNCAwIDAgMSAwLTh2LTFBNCA0IDAgMCAxIDE3IDNoM2EyIDIgMCAwIDEgMiAydjE2YTIgMiAwIDAgMS0yIDJ6Ij48L3BhdGg+PHBhdGggZD0iTTcgN2MwLTIuMjEgMS4yLTQgMy00aDBjMS44IDAgMyAxLjc5IDMgNHYxMEgzVjd6Ij48L3BhdGg+PC9zdmc+"/>
+<div class="chat-view-contact-info">
+<h1 id="chat-view-contact-name">[اسم جهة الاتصال]</h1>
+<small id="chat-view-contact-status">متصل الآن</small>
+</div>
+<div class="header-actions">
+<button class="icon-btn" title="مكالمة فيديو">📹</button>
+<button class="icon-btn" title="مكالمة صوتية">📞</button>
+<button class="icon-btn" title="خيارات">⋮</button>
+</div>
+</div>
+<div class="messages-container" id="messages-container">
+<!-- الرسائل تضاف هنا -->
+<div class="message-item received typing-indicator hidden">
+<div class="message-bubble">
+<div class="typing-dots"><span></span><span></span><span></span></div>
+</div>
+</div>
+</div>
+<div class="message-input-area">
+<button class="icon-btn attachment-btn" title="إرفاق ملف">📎</button>
+<input id="message-input-field" placeholder="اكتب رسالة..." type="text"/>
+<button class="icon-btn send-btn" id="send-message-button" title="إرسال">➤</button>
+</div>
+</div>
+</div>
+
+</body>
+</html>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script>
+firebase.auth().onAuthStateChanged(function(user) {
+  if (user) {
+    const email = user.email;
+    const displayName = email.split('@')[0];
+    localStorage.setItem("active_email", email);
+    localStorage.setItem(email + '_displayName', displayName);
+    currentUserData.email = email;
+    currentUserData.displayName = displayName;
+    currentUserData.username = localStorage.getItem(email + '_username');
+    currentUserData.coverPhotoUrl = localStorage.getItem(email + '_coverPhotoUrl');
+    if (!currentUserData.username) {
+      usernameInput.value = displayName.toLowerCase();
+      coverPhotoPreview.style.backgroundImage = currentUserData.coverPhotoUrl ? `url(${currentUserData.coverPhotoUrl})` : '';
+      coverPhotoPreview.textContent = currentUserData.coverPhotoUrl ? '' : 'معاينة صورة الخلفية';
+      showSection(profileSetupSection);
+    } else {
+      showChatsSectionWithUserData();
+    }
+  } else {
+    showSection(authSection);
+    toggleAuthForms(false);
+  }
+});
+
+loginForm.addEventListener('submit', function(e) {
+  e.preventDefault();
+  const email = document.getElementById("login-email").value.trim();
+  const password = document.getElementById("login-password").value.trim();
+  if (!email || !password) {
+    showAuthMessage("الرجاء إدخال البريد وكلمة المرور.", "error");
+    return;
+  }
+  showAuthMessage("جاري تسجيل الدخول...", "success");
+  firebase.auth().signInWithEmailAndPassword(email, password)
+    .catch(error => showAuthMessage(error.message, "error"));
+});
+
+signupForm.addEventListener('submit', function(e) {
+  e.preventDefault();
+  const email = document.getElementById("signup-email").value.trim();
+  const password = document.getElementById("signup-password").value.trim();
+  const confirmPassword = document.getElementById("signup-confirm-password").value.trim();
+  const displayNameInitial = document.getElementById("signup-displayname-initial").value.trim();
+  if (!email || !password || !confirmPassword || !displayNameInitial) {
+    showAuthMessage("يرجى إدخال جميع الحقول.", "error");
+    return;
+  }
+  if (password !== confirmPassword) {
+    showAuthMessage("كلمتا المرور غير متطابقتين.", "error");
+    return;
+  }
+  firebase.auth().createUserWithEmailAndPassword(email, password)
+    .then(() => {
+      localStorage.setItem(email + '_displayName', displayNameInitial);
+      currentUserData.displayName = displayNameInitial;
+      currentUserData.email = email;
+      usernameInput.value = displayNameInitial.toLowerCase();
+      showSection(profileSetupSection);
+    })
+    .catch(error => showAuthMessage(error.message, "error"));
+});
+</script>

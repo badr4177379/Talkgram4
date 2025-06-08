@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Talkgram (WhatsApp Clone)</title>
+    <style>
+        :root {
+            --whatsapp-dark-green: #075E54;
+            --whatsapp-light-green: #25D366;
+            --whatsapp-teal-green: #128C7E;
+            --whatsapp-chat-bg-light: #E5DDD5;
+            --whatsapp-chat-bg-dark: #0b141a;
+            --whatsapp-outgoing-bubble: #DCF8C6;
+            --whatsapp-incoming-bubble: #FFFFFF;
+            --whatsapp-text-primary: #111B21;
+            --whatsapp-text-secondary: #667781;
+            --whatsapp-text-white: #FFFFFF;
+            --whatsapp-border-light: #f0f0f0; /* Softer border */
+            --whatsapp-background-default: #FFFFFF;
+            --whatsapp-background-app: #f0f2f5; /* WhatsApp's app background */
+            --system-message-bg: #E1F3FB; /* Light blue for system messages */
+            --input-bar-bg: #F0F2F5; /* Background for chat input area */
+        }
+
+        body {
+            font-family: "Segoe UI", Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--whatsapp-background-app);
+            color: var(--whatsapp-text-primary);
+            direction: rtl;
+            overscroll-behavior-y: contain; /* Prevents pull-to-refresh on body */
+            height: 100vh; /* Full viewport height */
+            overflow: hidden; /* Initially hidden, JS will manage per page/modal */
+        }
+
+        .page {
+            display: none; /* Hidden by default, made active by JS */
+            width: 100%;
+            height: 100%;
+            overflow-y: auto; /* Allow scrolling within the page if content exceeds height */
+            box-sizing: border-box;
+            background-color: var(--whatsapp-background-default);
+            flex-direction: column; /* Default layout for pages */
+        }
+        .page.active {
+            display: flex; /* Show active page as a flex container */
+        }
+
+        #welcomePage {
+            justify-content: center;
+            align-items: center;
+            background-color: var(--whatsapp-background-app);
+        }
+        #registerPage, #loginPage {
+             background-color: var(--whatsapp-background-app);
+        }
+
+
+        .app-header {
+            background-color: var(--whatsapp-dark-green);
+            color: white;
+            padding: 0 8px 0 12px; /* RTL padding */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 56px; /* Standard app bar height */
+            min-height: 56px;
+            box-sizing: border-box;
+            flex-shrink: 0; /* Prevent header from shrinking */
+        }
+        .app-header .back-button, .app-header .actions button {
+            background: none; border: none; color: white;
+            font-size: 24px; cursor: pointer; padding: 12px;
+        }
+        .app-header .header-content {
+            display: flex; align-items: center; flex-grow: 1; overflow: hidden;
+            margin: 0 8px; /* Space around content if back button and actions exist */
+        }
+        .app-header .header-avatar img {
+            width: 40px; height: 40px; border-radius: 50%;
+            margin-left: 8px; margin-right: 8px; /* RTL */
+        }
+        .app-header .header-info {
+            display: flex; flex-direction: column; align-items: flex-start; /* RTL */
+            overflow: hidden;
+        }
+        .app-header .title {
+            font-size: 18px; font-weight: 500; white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis;
+        }
+        #chatsPage .app-header .title { font-size: 20px; }
+
+        .app-header .subtitle {
+            font-size: 12px; color: rgba(255, 255, 255, 0.8); white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis;
+        }
+        .app-header .actions { display: flex; align-items: center; }
+        .app-header .actions button { margin-left: 0; margin-right: 4px; } /* RTL */
+
+
+        .tabs {
+            display: flex; background-color: var(--whatsapp-dark-green);
+            color: rgba(255, 255, 255, 0.7); /* Slightly more visible inactive tabs */
+            height: 48px; min-height: 48px;
+            flex-shrink: 0;
+        }
+        .tab-item {
+            flex: 1; display: flex; justify-content: center; align-items: center;
+            font-size: 14px; font-weight: bold; text-transform: uppercase; cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: color 0.2s, border-bottom-color 0.2s;
+            padding: 0 8px; /* Padding for smaller screens */
+        }
+        .tab-item.active { color: white; border-bottom-color: white; }
+        .tab-item .icon { font-size: 20px; margin-left: 5px;} /* RTL */
+        .tab-item.icon-only .icon { margin-left: 0; }
+
+
+        .auth-content-container {
+            padding: 24px; width: 100%; max-width: 450px;
+            margin: 0 auto; text-align: center; flex-grow: 1;
+            display: flex; flex-direction: column; justify-content: center;
+        }
+         #registerPage .auth-content-container, #loginPage .auth-content-container {
+            padding-top: 20px; /* Less padding at top for auth headers */
+         }
+
+        #welcomePage .welcome-inner { padding: 20px; text-align: center; }
+        .logo {
+            width: 100px; height: 100px; background-color: var(--whatsapp-light-green);
+            border-radius: 20px; display: flex; justify-content: center; align-items: center;
+            margin: 0 auto 40px auto; font-size: 36px; color: white; font-weight: bold;
+        }
+        #welcomePage h1 { font-size: 28px; color: var(--whatsapp-text-primary); margin-bottom: 12px; font-weight: 600; }
+        #welcomePage p.tagline {
+            font-size: 16px; color: var(--whatsapp-text-secondary); line-height: 1.6;
+            margin-bottom: 50px; max-width: 300px; margin-left: auto; margin-right: auto;
+        }
+        .agree-button {
+            background-color: var(--whatsapp-light-green); color: white; padding: 14px 20px;
+            border-radius: 25px; font-size: 16px; font-weight: 600; border: none;
+            width: 100%; max-width: 300px; margin: 0 auto 15px auto; display: block; text-decoration: none;
+            cursor: pointer;
+        }
+        .agree-button.secondary { background-color: transparent; color: var(--whatsapp-light-green); }
+        #welcomePage .privacy-link { font-size: 13px; color: var(--whatsapp-text-secondary); margin-top: 30px; cursor: pointer; text-decoration: none;}
+        #welcomePage .privacy-link:hover { text-decoration: underline;}
+
+
+        .auth-form h2 { font-size: 20px; color: var(--whatsapp-dark-green); margin-bottom: 30px; font-weight: 600; }
+        .input-group { margin-bottom: 18px; text-align: right; } /* RTL */
+        .input-field {
+            width: 100%; padding: 14px 16px; border: 1px solid #DADADA; border-radius: 8px;
+            font-size: 16px; box-sizing: border-box; background-color: #F6F6F6; color: var(--whatsapp-text-primary);
+            outline: none;
+        }
+        .input-field::placeholder { color: var(--whatsapp-text-secondary); }
+        .input-field:focus { border-color: var(--whatsapp-light-green); background-color: white; box-shadow: 0 0 0 2px rgba(37, 211, 102, 0.2); }
+        .input-field#username, .input-field#loginIdentifier.username-style {
+            direction: ltr; /* Usernames often LTR */
+            text-align: left;
+        }
+        .input-field#username::placeholder, .input-field#loginIdentifier.username-style::placeholder {
+            text-align: right; /* Placeholder still RTL */
+        }
+        .field-note { font-size: 12px; color: var(--whatsapp-text-secondary); margin-top: 5px; text-align: right; } /* RTL */
+        .auth-action-button {
+            background-color: var(--whatsapp-light-green); color: white; padding: 14px 20px; border-radius: 25px;
+            font-size: 16px; font-weight: 600; width: 100%; border: none; margin-top: 20px; cursor: pointer;
+        }
+        .auth-form .link-style { font-size: 14px; color: var(--whatsapp-dark-green); margin-top: 25px; cursor: pointer; text-decoration: none;}
+        .auth-form .link-style:hover {text-decoration: underline;}
+
+
+        #chatsPage { background-color: var(--whatsapp-background-default); flex-grow: 1; display: flex; flex-direction: column; }
+        .tab-content { display: none; flex-grow: 1; overflow-y: auto; }
+        .tab-content.active { display: block; }
+
+        .chat-list-page-content {
+            flex-grow: 1; display: flex; flex-direction: column; overflow: hidden;
+        }
+        .search-bar-container {
+            padding: 8px 16px; background-color: var(--whatsapp-background-default);
+            border-bottom: 1px solid var(--whatsapp-border-light); flex-shrink: 0;
+        }
+        .search-input-wrapper {
+            background-color: var(--whatsapp-background-app);
+            border-radius: 20px; display: flex; align-items: center; padding: 6px 12px;
+        }
+        .search-input-wrapper input {
+            flex-grow: 1; border: none; outline: none; background-color: transparent;
+            font-size: 15px; margin-right: 8px; /* RTL */
+        }
+        .search-input-wrapper .search-icon { color: var(--whatsapp-text-secondary); }
+
+        .chat-list-container { padding: 0; overflow-y: auto; flex-grow: 1; }
+        .chat-item {
+            display: flex; align-items: center; padding: 10px 16px;
+            border-bottom: 1px solid var(--whatsapp-border-light); cursor: pointer;
+        }
+        .chat-item:last-child { border-bottom: none; }
+        .chat-item:hover { background-color: #f5f5f5; }
+        .chat-item .avatar img { width: 48px; height: 48px; border-radius: 50%; margin-left: 16px; object-fit: cover; } /* RTL */
+        .chat-content { flex-grow: 1; overflow: hidden; padding-right: 8px; } /* RTL */
+        .chat-name-time { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+        .chat-name { font-size: 17px; font-weight: 400; color: var(--whatsapp-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .chat-time { font-size: 12px; color: var(--whatsapp-text-secondary); flex-shrink: 0; }
+        .last-message-line { display: flex; align-items: center; font-size: 14px; color: var(--whatsapp-text-secondary); }
+        .last-message { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1; }
+        .unread-badge {
+            background-color: var(--whatsapp-light-green); color: white; font-size: 12px;
+            padding: 1px 6px; border-radius: 12px; font-weight: 500; margin-left: 8px; flex-shrink: 0; /* RTL */
+        }
+
+        /* .fab and .logout-button-chatspage are removed as per request */
+
+        #chatDetailPage {
+            background-color: var(--whatsapp-chat-bg-light);
+            /* background-image: url('your-chat-bg-image.png'); */ /* Optional: if you have a tiled background */
+            background-size: contain; /* Or 'cover' or 'auto' or pattern settings */
+        }
+        .messages-container {
+            flex-grow: 1; padding: 12px; overflow-y: auto; display: flex; flex-direction: column;
+        }
+        .message-bubble {
+            max-width: 75%; padding: 7px 12px; border-radius: 8px; margin-bottom: 4px;
+            word-wrap: break-word; line-height: 1.4; font-size: 14.5px;
+            position: relative; box-shadow: 0 1px 0.5px rgba(11,20,26,0.13);
+        }
+        .message-bubble .text { margin-bottom: 20px; }
+        .message-bubble .meta {
+            font-size: 11px; color: var(--whatsapp-text-secondary); position: absolute;
+            bottom: 5px; right: 8px; display: flex; align-items: center; /* RTL */
+        }
+        .message-bubble.outgoing .meta { color: rgba(0,0,0,0.45); }
+        .message-bubble.outgoing {
+            background-color: var(--whatsapp-outgoing-bubble); align-self: flex-start; /* RTL: flex-start is right */
+            border-top-left-radius: 0; margin-left: auto;
+        }
+        .message-bubble.incoming {
+            background-color: var(--whatsapp-incoming-bubble); align-self: flex-end; /* RTL: flex-end is left */
+            border-top-right-radius: 0; margin-right: auto;
+        }
+        .message-bubble.incoming .meta { left: 8px; right: auto; } /* RTL */
+        .message-bubble .read-ticks { font-size: 14px; margin-left: 4px; color: #53bdeb; } /* RTL */
+        .message-bubble.outgoing .read-ticks.sent { color: var(--whatsapp-text-secondary); }
+        .message-bubble.outgoing .read-ticks.delivered { color: var(--whatsapp-text-secondary); }
+
+        .system-message {
+            align-self: center; background-color: var(--system-message-bg); color: #585F63;
+            font-size: 12.5px; padding: 6px 10px; border-radius: 8px; margin: 10px 0;
+            max-width: 80%; text-align: center;
+        }
+
+        .chat-input-bar {
+            display: flex; align-items: flex-end; padding: 8px 12px;
+            background-color: var(--input-bar-bg);
+            border-top: 1px solid var(--whatsapp-border-light);
+            flex-shrink: 0;
+        }
+        .chat-input-bar .actions-left button, .chat-input-bar .actions-right button {
+            background: none; border: none; color: var(--whatsapp-text-secondary);
+            font-size: 24px; cursor: pointer; padding: 8px;
+        }
+        .chat-input-wrapper {
+            flex-grow: 1; background-color: var(--whatsapp-background-default);
+            border-radius: 20px; padding: 8px 12px; margin: 0 8px;
+            display: flex; align-items: center;
+        }
+        .chat-input-wrapper textarea {
+            flex-grow: 1; border: none; outline: none; background-color: transparent;
+            font-size: 15px; resize: none; max-height: 100px; line-height: 1.4;
+        }
+        .chat-input-bar .send-button {
+            background-color: var(--whatsapp-dark-green); color: white;
+            width: 44px; height: 44px; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 20px; border: none; cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        /* --- Status Feature Styles --- */
+        #statusTabContent {
+            padding: 0; display: flex; flex-direction: column;
+        }
+        .status-section {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--whatsapp-border-light);
+        }
+         .status-section:last-of-type { border-bottom: none; } /* Remove border from very last section */
+
+        .status-section h4 {
+            font-size: 14px;
+            color: var(--whatsapp-dark-green);
+            margin: 0 0 10px 0;
+            font-weight: 500;
+        }
+        .status-item {
+            display: flex; align-items: center; padding: 8px 0; cursor: pointer;
+        }
+        .status-item:hover { background-color: #f5f5f5; }
+        .status-avatar-wrapper { position: relative; margin-left: 16px; } /* RTL */
+        .status-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; }
+        .status-avatar-ring {
+            position: absolute; top: -3px; left: -3px; right: -3px; bottom: -3px;
+            border-radius: 50%; border: 2.5px solid var(--whatsapp-light-green);
+        }
+        .status-avatar-ring.viewed { border-color: #bdc3c7; }
+        .status-item-my .status-avatar-ring { border-style: dashed; border-color: #bdc3c7; }
+        .status-item-my.has-status .status-avatar-ring { border-style: solid; border-color: var(--whatsapp-light-green); }
+        .status-item-my.has-status.all-viewed .status-avatar-ring { border-color: #bdc3c7; } /* My status, all viewed */
+
+        .status-add-icon {
+            position:absolute; bottom:0; right:-5px; /* RTL */
+            background-color:var(--whatsapp-light-green); color:white;
+            width:20px; height:20px; border-radius:50%;
+            display:flex; align-items:center; justify-content:center;
+            font-size:14px; font-weight: bold; border:2px solid white;
+        }
+        .status-info { flex-grow: 1; padding-right: 8px; } /* RTL */
+        .status-name { font-size: 17px; font-weight: 400; color: var(--whatsapp-text-primary); }
+        .status-time { font-size: 14px; color: var(--whatsapp-text-secondary); display: block; }
+
+        /* Create Status Modal & Viewer Modal Styles */
+        .modal {
+            display: none; position: fixed; z-index: 2000;
+            left: 0; top: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            align-items: center; justify-content: center;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background-color: var(--whatsapp-background-default); padding: 20px;
+            border-radius: 8px; width: 90%; max-width: 400px;
+            text-align: right; /* RTL */
+            position: relative; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .modal-content h3 { margin-top: 0; color: var(--whatsapp-dark-green); }
+        .modal-content textarea#statusText {
+            width: 100%; min-height: 100px; padding: 10px;
+            border: 1px solid #ccc; border-radius: 5px;
+            margin-bottom: 15px; font-size: 16px; box-sizing: border-box;
+        }
+        .modal-content .image-preview {
+            max-width: 100%; max-height: 200px; margin-bottom: 10px;
+            border: 1px solid #eee; display: block;
+            margin-left: auto; margin-right: auto;
+        }
+         .modal-content .file-input-button {
+            background-color: var(--whatsapp-teal-green); color: white;
+            padding: 8px 12px; border-radius: 5px; cursor: pointer;
+            display: inline-block; margin-bottom: 10px;
+        }
+        .modal-buttons { margin-top: 20px; text-align: left; } /* RTL */
+        .modal-buttons button {
+            padding: 10px 20px; margin-right: 10px; /* RTL */
+            border: none; border-radius: 5px; cursor: pointer; font-weight: 500;
+        }
+        .modal-buttons .post-status-btn { background-color: var(--whatsapp-light-green); color: white; }
+         .modal-buttons button:first-child { margin-right: 0; } /* RTL */
+
+        #statusViewerModal { background-color: #000; }
+        .status-viewer-content {
+            width: 100%; height: 100%; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; color: white; position: relative;
+        }
+        .status-viewer-header {
+            position: absolute; top: 0; left: 0; right: 0; padding: 15px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.6), transparent);
+            display: flex; align-items: center; z-index: 10;
+        }
+        .status-viewer-header img { width: 35px; height: 35px; border-radius: 50%; margin-left: 10px;} /* RTL */
+        .status-viewer-header .name-time .name { font-size: 16px; font-weight: bold;}
+        .status-viewer-header .name-time .time { font-size: 12px; color: #eee;}
+        .status-viewer-close {
+            position: absolute; top: 15px; right: 15px; /* RTL */
+            font-size: 28px; color: white; cursor: pointer; background: none; border: none;
+            z-index: 10; padding: 5px;
+        }
+        .status-viewer-media { max-width: 95%; max-height: 80%; object-fit: contain; }
+        .status-viewer-text {
+            font-size: 28px; padding: 30px; text-align: center; word-break: break-word;
+            background-color: var(--whatsapp-teal-green); min-width: 250px; min-height: 150px;
+            display:flex; align-items:center; justify-content:center;
+            border-radius: 8px; max-width: 90%;
+        }
+        .status-progress-bars {
+            position: absolute; top: 5px; left: 10px; right: 10px;
+            display: flex; gap: 3px; z-index: 10;
+        }
+        .status-progress-bar {
+            flex-grow: 1; height: 3px; background-color: rgba(255,255,255,0.3); border-radius: 2px;
+        }
+        .status-progress-bar .progress {
+            height: 100%; width: 0%; background-color: white; border-radius: 2px;
+            transition: width 0.1s linear;
+        }
+        .status-nav {
+            position: absolute; top: 0; bottom: 0; width: 30%; cursor: pointer; z-index: 5;
+        }
+        .status-nav.prev { left: 0; }
+        .status-nav.next { right: 0; }
+        .status-viewer-caption {
+            position: absolute; bottom: 0; left: 0; right: 0; padding: 15px 20px;
+            background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
+            color: white; font-size: 15px; text-align: center; z-index: 10;
+            max-height: 30%; overflow-y: auto;
+        }
+
+        /* --- Settings Page Styles --- */
+        #settingsPage .app-header .title { /* Adjust if needed for back button */ }
+        .settings-content {
+            flex-grow: 1;
+            overflow-y: auto;
+            background-color: var(--whatsapp-background-app);
+        }
+        .settings-item {
+            display: flex;
+            align-items: center;
+            padding: 14px 20px;
+            cursor: pointer;
+            background-color: var(--whatsapp-background-default);
+        }
+        /* Add border to all but last item in a direct .settings-content child group (doesn't work with hr as spacer well) */
+        .settings-content > .settings-item:not(:last-child) {
+             border-bottom: 1px solid var(--whatsapp-border-light);
+        }
+        .settings-item:first-child { /* Specifically targets the profile item if it's the first */
+            padding-top: 20px;
+            padding-bottom: 20px;
+        }
+        .settings-item-avatar-wrapper { margin-left: 16px; } /* RTL */
+        .settings-user-avatar { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; }
+        .settings-item-info { flex-grow: 1; display: flex; flex-direction: column; }
+        .settings-user-name { font-size: 18px; font-weight: 500; color: var(--whatsapp-text-primary); }
+        .settings-user-status { font-size: 14px; color: var(--whatsapp-text-secondary); }
+        .settings-item-action-icon { font-size: 24px; color: var(--whatsapp-dark-green); padding: 8px; }
+
+        .settings-item:hover { background-color: #f9f9f9; }
+        .settings-icon {
+            font-size: 20px; color: var(--whatsapp-text-secondary);
+            margin-left: 24px; /* RTL */
+            width: 24px; text-align: center;
+        }
+        .settings-text { font-size: 16px; color: var(--whatsapp-text-primary); flex-grow: 1; }
+        .settings-subtext { font-size: 13px; color: var(--whatsapp-text-secondary); margin-top: 2px; display: block; }
+
+        .settings-divider { /* Used as a spacer block */
+            height: 10px;
+            background-color: transparent;
+            border: none; margin: 0;
+        }
+        .settings-logout-item .settings-text,
+        .settings-logout-item .settings-icon { color: #e74c3c; } /* A slightly different red */
+        .settings-logout-item:hover { background-color: #fceded; }
+
+
+    </style>
+</head>
+<body>
+
+    <!-- ========= Welcome Page ========= -->
+    <div id="welcomePage" class="page active">
+        <div class="welcome-inner">
+            <div class="logo">TG</div>
+            <h1>مرحباً بك في Talkgram</h1>
+            <p class="tagline">انقر على "الموافقة والمتابعة" لقبول شروط خدمة Talkgram.</p>
+            <button class="agree-button" onclick="showPage('registerPage')">الموافقة والمتابعة</button>
+            <button class="agree-button secondary" style="background-color: var(--whatsapp-dark-green); color:white;" onclick="showPage('loginPage')">لدي حساب بالفعل؟</button>
+            <a class="privacy-link" href="#" onclick="alert('سيتم عرض سياسة الخصوصية هنا')">شروط الخدمة وسياسة الخصوصية</a>
+        </div>
+    </div>
+
+    <!-- ========= Register Page ========= -->
+    <div id="registerPage" class="page">
+         <div class="app-header" style="background-color: transparent;">
+            <span style="width:48px;"></span>
+            <span class="title" style="color: var(--whatsapp-dark-green);">إنشاء حساب</span>
+            <span style="width:48px;"></span>
+        </div>
+        <div class="auth-content-container">
+            <form id="registerForm" class="auth-form">
+                <h2 style="color: var(--whatsapp-text-primary); font-weight:normal; font-size:17px;">أدخل معلوماتك لإنشاء حساب جديد.</h2>
+                <div class="input-group">
+                    <input type="text" id="username" name="username" class="input-field" placeholder="معرف المستخدم (يبدأ بـ @)" required>
+                </div>
+                <div class="input-group">
+                    <input type="email" id="email" name="email" class="input-field" placeholder="البريد الإلكتروني" required>
+                </div>
+                <div class="input-group">
+                    <input type="password" id="password" name="password" class="input-field" placeholder="كلمة المرور" required>
+                </div>
+                <div class="input-group">
+                    <input type="password" id="confirmPassword" name="confirmPassword" class="input-field" placeholder="تأكيد كلمة المرور" required>
+                </div>
+                <button type="submit" class="auth-action-button">إنشاء حساب</button>
+            </form>
+            <a class="link-style" style="margin-top:30px;" onclick="showPage('loginPage')">لديك حساب بالفعل؟ تسجيل الدخول</a>
+        </div>
+    </div>
+
+    <!-- ========= Login Page ========= -->
+    <div id="loginPage" class="page">
+        <div class="app-header" style="background-color: transparent;">
+             <span style="width:48px;"></span>
+            <span class="title" style="color: var(--whatsapp-dark-green);">تسجيل الدخول</span>
+             <span style="width:48px;"></span>
+        </div>
+        <div class="auth-content-container">
+            <form id="loginForm" class="auth-form">
+                <h2 style="color: var(--whatsapp-text-primary); font-weight:normal; font-size:17px;">مرحباً بعودتك! الرجاء تسجيل الدخول.</h2>
+                <div class="input-group">
+                    <input type="text" id="loginIdentifier" name="loginIdentifier" class="input-field" placeholder="البريد الإلكتروني أو معرف المستخدم" required>
+                </div>
+                <div class="input-group">
+                    <input type="password" id="passwordLogin" name="passwordLogin" class="input-field" placeholder="كلمة المرور" required>
+                </div>
+                <button type="submit" class="auth-action-button">تسجيل الدخول</button>
+            </form>
+            <div class="extra-links" style="margin-top:30px;">
+                <a class="link-style" style="font-size:15px;" onclick="alert('سيتم توجيهك لصفحة استعادة كلمة المرور')">هل نسيت كلمة المرور؟</a>
+                <br>
+                <a class="link-style" style="font-size:15px; margin-top:15px;" onclick="showPage('registerPage')">إنشاء حساب جديد</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========= Chats Page ========= -->
+    <div id="chatsPage" class="page">
+        <div class="app-header">
+            <span class="title">Talkgram</span>
+            <div class="actions">
+                <button title="كاميرا" onclick="alert('كاميرا...')">📸</button>
+                <button title="بحث" id="toggleSearchButtonChats">🔍</button>
+                <button title="الإعدادات" onclick="showPage('settingsPage')">⚙️</button>
+                <button title="قائمة" onclick="alert('قائمة...')">⋮</button>
+            </div>
+        </div>
+        <div class="tabs">
+            <div class="tab-item icon-only" onclick="switchTab(this, 'communitiesTabContent')"><span class="icon">👥</span></div>
+            <div class="tab-item active" onclick="switchTab(this, 'chatsTabContent')">الدردشات</div>
+            <div class="tab-item" onclick="switchTab(this, 'statusTabContent')">الحالة</div>
+            <div class="tab-item" onclick="switchTab(this, 'callsTabContent')">المكالمات</div>
+        </div>
+
+        <div class="chat-list-page-content">
+            <div id="searchBarContainerChats" class="search-bar-container" style="display: none;">
+                <div class="search-input-wrapper">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="chatSearchInput" placeholder="ابحث أو ابدأ دردشة جديدة...">
+                </div>
+            </div>
+
+            <div id="chatsTabContent" class="tab-content active">
+                <div class="chat-list-container"></div>
+            </div>
+
+            <div id="statusTabContent" class="tab-content">
+                <div class="status-section">
+                    <div id="myStatusContainer" class="status-item status-item-my" onclick="viewMyStatuses()">
+                        <div class="status-avatar-wrapper">
+                            <img id="myStatusAvatar" src="https://via.placeholder.com/48/075E54/FFFFFF?text=ME" alt="My Avatar" class="status-avatar">
+                            <div id="myStatusRing" class="status-avatar-ring"></div>
+                            <span id="myStatusAddIcon" class="status-add-icon" onclick="event.stopPropagation(); openCreateStatusModal();">+</span>
+                        </div>
+                        <div class="status-info">
+                            <span class="status-name">حالتي</span>
+                            <span id="myStatusTime" class="status-time">انقر لإضافة تحديث للحالة</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="status-section">
+                    <h4>التحديثات الأخيرة</h4>
+                    <div id="recentUpdatesContainer"></div>
+                </div>
+                 <div class="status-section">
+                    <h4>التحديثات المشاهدة</h4>
+                    <div id="viewedUpdatesContainer"></div>
+                </div>
+            </div>
+
+            <div id="callsTabContent" class="tab-content" style="padding:20px; text-align:center;">محتوى تبويب المكالمات هنا...</div>
+            <div id="communitiesTabContent" class="tab-content" style="padding:20px; text-align:center;">محتوى تبويب المجموعات هنا...</div>
+        </div>
+        <!-- FABs are removed -->
+    </div>
+
+    <!-- ========= Chat Detail Page ========= -->
+    <div id="chatDetailPage" class="page">
+        <div class="app-header">
+            <button class="back-button" onclick="showPage('chatsPage')">←</button>
+            <div class="header-content">
+                <div class="header-avatar">
+                    <img id="chatDetailAvatar" src="https://via.placeholder.com/40" alt="Avatar">
+                </div>
+                <div class="header-info">
+                    <span class="title" id="chatDetailName">اسم المستخدم</span>
+                    <span class="subtitle" id="chatDetailStatus">متصل الآن</span>
+                </div>
+            </div>
+            <div class="actions">
+                <button title="مكالمة فيديو" onclick="alert('مكالمة فيديو...')">📹</button>
+                <button title="مكالمة صوتية" onclick="alert('مكالمة صوتية...')">📞</button>
+                <button title="قائمة" onclick="alert('قائمة المحادثة...')">⋮</button>
+            </div>
+        </div>
+        <div class="messages-container" id="messagesList">
+            <div class="system-message">🔒 الرسائل والمكالمات مشفرة تماماً بين الطرفين.</div>
+        </div>
+        <div class="chat-input-bar">
+            <div class="actions-left"> <button title="إيموجي" onclick="alert('إيموجي')">😊</button> </div>
+            <div class="chat-input-wrapper"> <textarea id="chatMessageInput" placeholder="اكتب رسالة..." rows="1"></textarea> </div>
+            <div class="actions-right">
+                <button title="إرفاق" onclick="alert('إرفاق ملف')">📎</button>
+                <button title="كاميرا" onclick="alert('كاميرا')">📸</button>
+            </div>
+            <button class="send-button" id="sendMessageButton" title="إرسال">➢</button>
+        </div>
+    </div>
+
+    <!-- ========= Settings Page ========= -->
+    <div id="settingsPage" class="page">
+        <div class="app-header">
+            <button class="back-button" onclick="showPage('chatsPage')">←</button>
+            <div class="header-content" style="justify-content: center;"> <!-- Center title when no actions -->
+                <span class="title">الإعدادات</span>
+            </div>
+            <span style="width: 48px;"></span> <!-- Spacer for balance -->
+        </div>
+        <div class="settings-content">
+            <div class="settings-item" onclick="alert('سيتم عرض صفحة الملف الشخصي هنا.\nيمكنك تعديل اسمك، الصورة، والحالة.')">
+                <div class="settings-item-avatar-wrapper">
+                    <img id="settingsUserAvatar" src="https://via.placeholder.com/60/075E54/FFFFFF?text=ME" alt="Avatar" class="settings-user-avatar">
+                </div>
+                <div class="settings-item-info">
+                    <span id="settingsUserName" class="settings-user-name">اسمك هنا</span>
+                    <span class="settings-user-status">وصف الحالة المتاح هنا...</span>
+                </div>
+                 <span class="settings-item-action-icon" onclick="event.stopPropagation(); alert('فتح محرر الملف الشخصي أو عرض QR')">✏️</span>
+            </div>
+            <!-- Spacer block -->
+            <div class="settings-divider"></div>
+
+            <div class="settings-item" onclick="alert('إعدادات الحساب...')">
+                <span class="settings-icon">🔑</span>
+                <div class="settings-item-info" style="flex-direction: column; align-items: flex-start;">
+                    <span class="settings-text">الحساب</span>
+                    <span class="settings-subtext">الخصوصية، الأمان، تغيير الرقم</span>
+                </div>
+            </div>
+            <div class="settings-item" onclick="alert('إعدادات الدردشات...')">
+                <span class="settings-icon">💬</span>
+                 <div class="settings-item-info" style="flex-direction: column; align-items: flex-start;">
+                    <span class="settings-text">الدردشات</span>
+                    <span class="settings-subtext">المظهر، الخلفية، سجل الدردشات</span>
+                </div>
+            </div>
+            <div class="settings-item" onclick="alert('إعدادات الإشعارات...')">
+                <span class="settings-icon">🔔</span>
+                 <div class="settings-item-info" style="flex-direction: column; align-items: flex-start;">
+                    <span class="settings-text">الإشعارات</span>
+                    <span class="settings-subtext">نغمات الرسائل والمجموعات والمكالمات</span>
+                </div>
+            </div>
+            <div class="settings-item" onclick="alert('إعدادات التخزين والبيانات...')">
+                <span class="settings-icon">📊</span>
+                <div class="settings-item-info" style="flex-direction: column; align-items: flex-start;">
+                    <span class="settings-text">التخزين والبيانات</span>
+                    <span class="settings-subtext">استخدام الشبكة، التنزيل التلقائي</span>
+                </div>
+            </div>
+            <!-- Spacer block -->
+            <div class="settings-divider"></div>
+
+             <div class="settings-item" onclick="alert('صفحة المساعدة...')">
+                <span class="settings-icon">❓</span>
+                 <div class="settings-item-info" style="flex-direction: column; align-items: flex-start;">
+                    <span class="settings-text">المساعدة</span>
+                    <span class="settings-subtext">مركز المساعدة، اتصل بنا، سياسة الخصوصية</span>
+                 </div>
+            </div>
+             <div class="settings-item" onclick="alert('دعوة صديق...')">
+                <span class="settings-icon">➕</span>
+                <span class="settings-text">دعوة صديق</span>
+            </div>
+
+            <!-- Spacer block -->
+            <div class="settings-divider"></div>
+
+            <div class="settings-item settings-logout-item" onclick="logout()">
+                <span class="settings-icon">↪</span>
+                <span class="settings-text">تسجيل الخروج</span>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Modals (outside of .page divs) -->
+    <div id="createStatusModal" class="modal">
+        <div class="modal-content">
+            <h3>إنشاء حالة جديدة</h3>
+            <textarea id="statusText" placeholder="اكتب حالتك... (اختياري للصورة)"></textarea>
+            <div>
+                <input type="file" id="statusImageFile" accept="image/*" style="display: none;">
+                <button class="file-input-button" onclick="document.getElementById('statusImageFile').click()">📷 اختيار صورة</button>
+            </div>
+            <img id="statusImagePreview" src="#" alt="معاينة الصورة" style="display:none;" class="image-preview"/>
+            <div class="modal-buttons">
+                <button onclick="closeModal('createStatusModal')">إلغاء</button>
+                <button class="post-status-btn" onclick="postNewStatus()">نشر الحالة</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="statusViewerModal" class="modal">
+        <div class="status-viewer-content">
+            <div class="status-progress-bars" id="statusViewerProgressBars"></div>
+            <div class="status-viewer-header">
+                <img id="statusViewerAvatar" src="" alt="Avatar">
+                <div class="name-time">
+                    <span id="statusViewerName" class="name"></span>
+                    <span id="statusViewerTime" class="time"></span>
+                </div>
+            </div>
+            <button class="status-viewer-close" onclick="closeModal('statusViewerModal')">&times;</button>
+            <img id="statusViewerImage" src="" alt="Status Image" class="status-viewer-media" style="display:none;">
+            <div id="statusViewerText" class="status-viewer-text" style="display:none;"></div>
+            <div id="statusViewerCaption" class="status-viewer-caption" style="display:none;"></div>
+            <div class="status-nav prev" onclick="navigateStatus(-1, true)"></div>
+            <div class="status-nav next" onclick="navigateStatus(1, true)"></div>
+        </div>
+    </div>
+
+    <script>
+        const sampleChats = [
+            { id: 1, name: "صديق ١", username: "@friend_one", avatar: "https://via.placeholder.com/48/075E54/FFFFFF?text=S1", lastMessage: "مرحباً! كيف حالك اليوم؟", time: "10:30 ص", unread: 2, onlineStatus: "متصل الآن" },
+            { id: 2, name: "مجموعة العمل", avatar: "https://via.placeholder.com/48/25D366/FFFFFF?text=WG", lastMessage: "أحمد: لا تنسوا اجتماع الغد.", time: "أمس", unread: 0, onlineStatus: "5 أعضاء متصلون" },
+            { id: 3, name: "سارة", username: "@sarah_K", avatar: "https://via.placeholder.com/48/128C7E/FFFFFF?text=S", lastMessage: "تمام، سأكون هناك.", time: "الاثنين", unread: 0, onlineStatus: "آخر ظهور اليوم عند 09:15 ص" },
+            { id: 4, name: "@user_alpha", username: "@user_alpha", avatar: "https://via.placeholder.com/48/FFC107/000000?text=UA", lastMessage: "هل أنت متاح للاجتماع؟", time: "11:45 ص", unread: 1, onlineStatus: "يكتب..." },
+            { id: 5, name: "خدمة العملاء", avatar: "https://via.placeholder.com/48/007BFF/FFFFFF?text=CS", lastMessage: "شكراً لتواصلك معنا.", time: "08:00 ص", unread: 0, onlineStatus: "متصل" }
+        ];
+
+        // Chat Page Elements
+        let messageInputArea, sendMessageBtn, chatMessagesListContainer;
+        let toggleSearchBtnChats, searchBarContainerChats, chatSearchInputEl;
+        
+        // Status Page Elements
+        let statusTextEl, statusImageFileEl, statusImagePreviewEl;
+        let myStatusContainerEl, myStatusAvatarEl, myStatusTimeEl, myStatusRingEl, myStatusAddIconEl;
+        let recentUpdatesContainerEl, viewedUpdatesContainerEl;
+
+        // Status Data
+        let myStatuses = []; 
+        let contactStatuses = {};
+        const STATUS_DURATION = 24 * 60 * 60 * 1000;
+        const STATUS_VIEW_TIME = 5000;
+
+        let currentStatusViewer = { statuses: [], currentIndex: 0, timeoutId: null, contactName: '', contactAvatar: '' };
+        
+        let myUserInfo = {
+            name: "اسمك الافتراضي", // Default name, updated on login/register
+            avatar: "https://via.placeholder.com/60/075E54/FFFFFF?text=??", // Default avatar, updated on login/register
+            statusText: "متاح" // Default status text
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            messageInputArea = document.getElementById('chatMessageInput');
+            sendMessageBtn = document.getElementById('sendMessageButton');
+            chatMessagesListContainer = document.getElementById('messagesList');
+            toggleSearchBtnChats = document.getElementById('toggleSearchButtonChats');
+            searchBarContainerChats = document.getElementById('searchBarContainerChats');
+            chatSearchInputEl = document.getElementById('chatSearchInput');
+
+            statusTextEl = document.getElementById('statusText');
+            statusImageFileEl = document.getElementById('statusImageFile');
+            statusImagePreviewEl = document.getElementById('statusImagePreview');
+            myStatusContainerEl = document.getElementById('myStatusContainer');
+            myStatusAvatarEl = document.getElementById('myStatusAvatar');
+            myStatusTimeEl = document.getElementById('myStatusTime');
+            myStatusRingEl = document.getElementById('myStatusRing');
+            myStatusAddIconEl = document.getElementById('myStatusAddIcon');
+            recentUpdatesContainerEl = document.getElementById('recentUpdatesContainer');
+            viewedUpdatesContainerEl = document.getElementById('viewedUpdatesContainer');
+
+            showPage('welcomePage');
+            renderChatList(sampleChats);
+            loadStatusesFromLocalStorage();
+            initializeMyUserInfo(); // Set up my user info for status and settings
+            renderStatusTab();     
+
+            if (toggleSearchBtnChats && searchBarContainerChats) {
+                toggleSearchBtnChats.addEventListener('click', () => {
+                    const isHidden = searchBarContainerChats.style.display === 'none' || searchBarContainerChats.style.display === '';
+                    searchBarContainerChats.style.display = isHidden ? 'flex' : 'none';
+                    if (isHidden) chatSearchInputEl.focus();
+                    else { chatSearchInputEl.value = ''; renderChatList(sampleChats); }
+                });
+            }
+            if (chatSearchInputEl) {
+                chatSearchInputEl.addEventListener('input', function() {
+                    const searchTerm = this.value.toLowerCase().trim();
+                    const filteredChats = sampleChats.filter(chat =>
+                        chat.name.toLowerCase().includes(searchTerm) ||
+                        (chat.username && chat.username.toLowerCase().includes(searchTerm))
+                    );
+                    renderChatList(filteredChats);
+                });
+            }
+            if(messageInputArea) messageInputArea.addEventListener('input', autoResizeTextarea);
+            if(sendMessageBtn && messageInputArea){
+                sendMessageBtn.addEventListener('click', handleSendMessage);
+                messageInputArea.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }
+                });
+            }
+            if (statusImageFileEl) statusImageFileEl.addEventListener('change', previewStatusImage);
+            if (myStatusAddIconEl) {
+                myStatusAddIconEl.addEventListener('click', (event) => {
+                    event.stopPropagation(); openCreateStatusModal();
+                });
+            }
+            initializeAuthForms();
+        });
+        
+        function initializeMyUserInfo() {
+            if (myStatusAvatarEl) myStatusAvatarEl.src = myUserInfo.avatar;
+            updateSettingsUserInfo(); // Also update settings page if it's the first one shown
+        }
+
+        function updateSettingsUserInfo() {
+            const settingsUserAvatarEl = document.getElementById('settingsUserAvatar');
+            const settingsUserNameEl = document.getElementById('settingsUserName');
+            const settingsUserStatusEl = document.querySelector('#settingsPage .settings-user-status');
+
+            if (settingsUserAvatarEl) settingsUserAvatarEl.src = myUserInfo.avatar;
+            if (settingsUserNameEl) settingsUserNameEl.textContent = myUserInfo.name;
+            if (settingsUserStatusEl) settingsUserStatusEl.textContent = myUserInfo.statusText;
+        }
+
+
+        function autoResizeTextarea() { this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px'; }
+
+        function handleSendMessage(){
+            const messageText = messageInputArea.value.trim();
+            if(messageText){
+                addMessageToChat(messageText, true);
+                messageInputArea.value = '';
+                autoResizeTextarea.call(messageInputArea);
+                setTimeout(() => {
+                    const chatPartnerName = document.getElementById('chatDetailName').textContent;
+                    addMessageToChat("تم استلام رسالتك! (رد تلقائي من " + chatPartnerName + ")", false);
+                }, 1000 + Math.random() * 1000);
+            }
+        }
+
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            const activePage = document.getElementById(pageId);
+            if (activePage) activePage.classList.add('active');
+
+            if (pageId === 'chatsPage') {
+                const currentActiveTabItem = document.querySelector('#chatsPage .tab-item.active');
+                let targetTabContentId = 'chatsTabContent';
+                if (currentActiveTabItem) {
+                    const onclickAttr = currentActiveTabItem.getAttribute('onclick');
+                    const match = onclickAttr ? onclickAttr.match(/'([^']+)'/) : null;
+                    if (match && match[1]) targetTabContentId = match[1];
+                }
+                const targetTabButton = document.querySelector(`.tab-item[onclick*="'${targetTabContentId}'"]`);
+                if (targetTabButton) switchTab(targetTabButton, targetTabContentId);
+                else {
+                    const chatsTabButton = document.querySelector('.tab-item[onclick*="chatsTabContent"]');
+                    if (chatsTabButton) switchTab(chatsTabButton, 'chatsTabContent');
+                }
+            }
+            
+            if (pageId === 'welcomePage' || pageId === 'registerPage' || pageId === 'loginPage' || pageId === 'settingsPage') {
+                document.body.style.overflow = 'auto';
+            } else {
+                document.body.style.overflow = 'hidden';
+            }
+
+            if (pageId === 'settingsPage') updateSettingsUserInfo();
+        }
+
+        function switchTab(tabElement, tabContentId) {
+            const page = tabElement.closest('.page');
+            if (!page) return;
+            page.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+            page.querySelectorAll('.tab-item').forEach(item => item.classList.remove('active'));
+            const activeTabContent = document.getElementById(tabContentId);
+            if(activeTabContent) {
+                activeTabContent.style.display = 'block';
+                if (tabContentId === 'statusTabContent') renderStatusTab();
+            }
+            tabElement.classList.add('active');
+        }
+
+        function renderChatList(chatsToRender) {
+            const container = document.querySelector('#chatsPage #chatsTabContent .chat-list-container');
+            if (!container) return;
+            container.innerHTML = '';
+            if (chatsToRender.length === 0) {
+                container.innerHTML = '<p style="text-align:center; padding:20px; color: var(--whatsapp-text-secondary);">لا توجد دردشات.</p>';
+                return;
+            }
+            chatsToRender.forEach(chat => {
+                container.insertAdjacentHTML('beforeend', `
+                    <div class="chat-item" onclick="openChatDetail('${escapeHTML(chat.name)}', '${escapeHTML(chat.avatar)}', '${escapeHTML(chat.onlineStatus)}')">
+                        <div class="avatar"><img src="${escapeHTML(chat.avatar)}" alt="${escapeHTML(chat.name.substring(0,1))}"></div>
+                        <div class="chat-content">
+                            <div class="chat-name-time">
+                                <span class="chat-name">${escapeHTML(chat.name)}</span>
+                                <span class="chat-time">${escapeHTML(chat.time)}</span>
+                            </div>
+                            <div class="last-message-line">
+                                <span class="last-message">${escapeHTML(chat.lastMessage)}</span>
+                                ${chat.unread > 0 ? `<span class="unread-badge">${chat.unread}</span>` : ''}
+                            </div>
+                        </div>
+                    </div>`);
+            });
+        }
+        
+        function startNewChat() {
+            const searchBar = document.getElementById('searchBarContainerChats');
+            const searchInput = document.getElementById('chatSearchInput');
+            const chatsTabButton = document.querySelector('.tab-item[onclick*="chatsTabContent"]');
+            if (chatsTabButton && !chatsTabButton.classList.contains('active')) switchTab(chatsTabButton, 'chatsTabContent');
+            if (searchBar.style.display === 'none' || searchBar.style.display === '') searchBar.style.display = 'flex';
+            searchInput.value = '';
+            renderChatList(sampleChats);
+            searchInput.focus();
+        }
+
+        function openChatDetail(chatName, avatarUrl, onlineStatus) {
+            document.getElementById('chatDetailName').textContent = chatName;
+            document.getElementById('chatDetailAvatar').src = avatarUrl;
+            document.getElementById('chatDetailStatus').textContent = onlineStatus;
+            if (chatMessagesListContainer) {
+                chatMessagesListContainer.innerHTML = `
+                    <div class="system-message">🔒 الرسائل والمكالمات مشفرة تماماً بين الطرفين.</div>
+                    <div class="message-bubble incoming">
+                        <div class="text">مرحباً! أنا ${escapeHTML(chatName)}. كيف يمكنني مساعدتك؟</div>
+                        <div class="meta">الآن</div>
+                    </div>`;
+            }
+            showPage('chatDetailPage');
+            scrollToBottomMessages();
+            if(messageInputArea) messageInputArea.focus();
+        }
+
+        function addMessageToChat(text, isOutgoing) {
+            if (!chatMessagesListContainer) return;
+            const bubbleClass = isOutgoing ? 'outgoing' : 'incoming';
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
+            const readTicksHTML = isOutgoing ? `<span class="read-ticks sent">✓</span>` : '';
+            chatMessagesListContainer.insertAdjacentHTML('beforeend', `
+                <div class="message-bubble ${bubbleClass}">
+                    <div class="text">${escapeHTML(text)}</div>
+                    <div class="meta">${timeString}${readTicksHTML}</div>
+                </div>`);
+            scrollToBottomMessages();
+        }
+        
+        function scrollToBottomMessages() { if (chatMessagesListContainer) chatMessagesListContainer.scrollTop = chatMessagesListContainer.scrollHeight; }
+        function escapeHTML(str) { if (typeof str !== 'string') return ''; const p = document.createElement("p"); p.textContent = str; return p.innerHTML; }
+
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) modal.classList.remove('active');
+            const anyModalActive = document.querySelector('.modal.active');
+            if (!anyModalActive) {
+                const currentPageActive = document.querySelector('.page.active');
+                if (currentPageActive && (currentPageActive.id === 'welcomePage' || currentPageActive.id === 'registerPage' || currentPageActive.id === 'loginPage' || currentPageActive.id === 'settingsPage')) {
+                    document.body.style.overflow = 'auto';
+                } else {
+                    document.body.style.overflow = 'hidden';
+                }
+            }
+            if (modalId === 'statusViewerModal' && currentStatusViewer.timeoutId) { clearTimeout(currentStatusViewer.timeoutId); currentStatusViewer.timeoutId = null; }
+            if (modalId === 'createStatusModal') { statusTextEl.value = ''; statusImageFileEl.value = null; statusImagePreviewEl.src = '#'; statusImagePreviewEl.style.display = 'none'; }
+        }
+
+        function openCreateStatusModal(type = 'text') {
+            closeModal('createStatusModal');
+            statusTextEl.value = ''; statusImageFileEl.value = '';
+            statusImagePreviewEl.style.display = 'none'; statusImagePreviewEl.src = '';
+            openModal('createStatusModal');
+            if (type === 'text') statusTextEl.focus();
+        }
+
+        function previewStatusImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) { statusImagePreviewEl.src = e.target.result; statusImagePreviewEl.style.display = 'block'; }
+                reader.readAsDataURL(file);
+            } else { statusImagePreviewEl.style.display = 'none'; statusImagePreviewEl.src = ''; }
+        }
+
+        function postNewStatus() {
+            const textContent = statusTextEl.value.trim();
+            const imageFile = statusImageFileEl.files[0];
+            if (!textContent && !imageFile) { alert("لا يمكنك نشر حالة فارغة!"); return; }
+            const timestamp = new Date().toISOString();
+            const id = Date.now().toString() + Math.random().toString(36).substring(2,7);
+            let newStatusItem;
+            if (imageFile) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    newStatusItem = { id, type: 'image', content: e.target.result, caption: textContent, timestamp, viewedByMeOnce: false };
+                    myStatuses.push(newStatusItem);
+                    myStatuses.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    saveStatusesToLocalStorage(); renderStatusTab(); closeModal('createStatusModal'); alert("تم نشر الحالة المصورة بنجاح!");
+                }
+                reader.readAsDataURL(imageFile);
+            } else if (textContent) {
+                newStatusItem = { id, type: 'text', content: textContent, caption: '', timestamp, viewedByMeOnce: false };
+                myStatuses.push(newStatusItem);
+                myStatuses.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                saveStatusesToLocalStorage(); renderStatusTab(); closeModal('createStatusModal'); alert("تم نشر الحالة النصية بنجاح!");
+            }
+        }
+        
+        function renderStatusTab() {
+            const now = new Date();
+            myStatuses = myStatuses.filter(status => (now - new Date(status.timestamp)) < STATUS_DURATION);
+            if (myStatusTimeEl && myStatusRingEl && myStatusAddIconEl) {
+                if (myStatuses.length > 0) {
+                    const latestMyStatus = myStatuses[0];
+                    myStatusTimeEl.textContent = `آخر تحديث: ${formatStatusTime(latestMyStatus.timestamp)}`;
+                    myStatusRingEl.classList.add('has-status');
+                    const allMyStatusesViewedOnce = myStatuses.every(s => s.viewedByMeOnce);
+                    myStatusRingEl.classList.toggle('all-viewed', allMyStatusesViewedOnce); // Uses .all-viewed for my status
+                    myStatusAddIconEl.style.display = 'flex';
+                } else {
+                    myStatusTimeEl.textContent = "انقر لإضافة تحديث للحالة";
+                    myStatusRingEl.classList.remove('has-status', 'all-viewed');
+                    myStatusAddIconEl.style.display = 'flex';
+                }
+            }
+
+            if (!recentUpdatesContainerEl || !viewedUpdatesContainerEl) return;
+            recentUpdatesContainerEl.innerHTML = ''; viewedUpdatesContainerEl.innerHTML = '';
+            let hasRecentUnviewed = false; let hasViewedUpdates = false;
+
+            sampleChats.forEach(chat => { if (!contactStatuses[chat.name] && chat.name !== myUserInfo.name) contactStatuses[chat.name] = []; });
+            if (Object.keys(contactStatuses).every(name => contactStatuses[name].length === 0)) {
+                 if (sampleChats[0] && sampleChats[0].name !== myUserInfo.name) {
+                    contactStatuses[sampleChats[0].name] = [
+                        { id: 'cs1a'+Date.now(), type: 'text', content: 'يوم رائع! ☀️', caption:'', timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), avatar: sampleChats[0].avatar, viewed: false },
+                        { id: 'cs1b'+Date.now(), type: 'image', content: 'https://picsum.photos/seed/status1/400/600', caption: 'من رحلتي', timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(), avatar: sampleChats[0].avatar, viewed: false }]; }
+                 if (sampleChats[2] && sampleChats[2].name !== myUserInfo.name) {
+                     contactStatuses[sampleChats[2].name] = [ { id: 'cs2a'+Date.now(), type: 'text', content: 'أستمتع بكتاب جديد.', caption: '', timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), avatar: sampleChats[2].avatar, viewed: false }]; }
+            }
+
+            Object.keys(contactStatuses).forEach(contactName => {
+                contactStatuses[contactName] = contactStatuses[contactName].filter(s => (now - new Date(s.timestamp)) < STATUS_DURATION);
+                if (contactStatuses[contactName].length > 0) {
+                    const statuses = contactStatuses[contactName];
+                    statuses.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    const latestStatus = statuses[0];
+                    const allThisContactStatusesViewed = statuses.every(s => s.viewed);
+                    const contactAvatar = latestStatus.avatar || "https://via.placeholder.com/48/CCCCCC/FFFFFF?text=" + escapeHTML(contactName.substring(0,1));
+                    const statusItemHTML = `
+                        <div class="status-item" onclick="viewContactStatus('${escapeHTML(contactName)}')">
+                            <div class="status-avatar-wrapper">
+                                <img src="${escapeHTML(contactAvatar)}" alt="${escapeHTML(contactName)}" class="status-avatar">
+                                <div class="status-avatar-ring ${allThisContactStatusesViewed ? 'viewed' : ''}"></div>
+                            </div>
+                            <div class="status-info">
+                                <span class="status-name">${escapeHTML(contactName)}</span>
+                                <span class="status-time">${formatStatusTime(latestStatus.timestamp)} (${statuses.length})</span>
+                            </div></div>`;
+                    if (allThisContactStatusesViewed) { viewedUpdatesContainerEl.insertAdjacentHTML('beforeend', statusItemHTML); hasViewedUpdates = true; }
+                    else { recentUpdatesContainerEl.insertAdjacentHTML('beforeend', statusItemHTML); hasRecentUnviewed = true; }
+                }
+            });
+            if (!hasRecentUnviewed) recentUpdatesContainerEl.innerHTML = '<p style="text-align:center; padding:10px 0; color: var(--whatsapp-text-secondary);">لا توجد تحديثات جديدة.</p>';
+            if (!hasViewedUpdates) viewedUpdatesContainerEl.innerHTML = '<p style="text-align:center; padding:10px 0; color: var(--whatsapp-text-secondary);">لا توجد تحديثات مشاهدة بعد.</p>';
+            saveStatusesToLocalStorage();
+        }
+
+        function formatStatusTime(isoTimestamp) {
+            const date = new Date(isoTimestamp); const now = new Date();
+            const diffMs = now - date; const diffHours = Math.floor(diffMs / 3600000);
+            const diffMins = Math.floor((diffMs % 3600000) / 60000);
+            if (diffHours === 0 && diffMins < 1) return "الآن";
+            if (diffHours === 0) return `منذ ${diffMins} دقيقة`;
+            if (diffHours < 24) return `منذ ${diffHours} س، ${diffMins} د`;
+            return date.toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' }) + " " + date.toLocaleTimeString('ar-EG', { hour: 'numeric', minute: '2-digit', hour12: true });
+        }
+
+        function viewMyStatuses() {
+            if (myStatuses.length === 0) { openCreateStatusModal(); return; }
+            currentStatusViewer.statuses = [...myStatuses].reverse(); 
+            currentStatusViewer.currentIndex = 0;
+            currentStatusViewer.contactName = myUserInfo.name;
+            currentStatusViewer.contactAvatar = myUserInfo.avatar;
+            displayCurrentStatusInViewer(); openModal('statusViewerModal');
+        }
+
+        function viewContactStatus(contactName) {
+            const statuses = contactStatuses[contactName];
+            if (!statuses || statuses.length === 0) return;
+            currentStatusViewer.statuses = [...statuses].reverse(); 
+            currentStatusViewer.currentIndex = 0;
+            currentStatusViewer.contactName = contactName;
+            currentStatusViewer.contactAvatar = statuses[0].avatar || "https://via.placeholder.com/48/CCCCCC/FFFFFF?text=" + escapeHTML(contactName.substring(0,1));
+            displayCurrentStatusInViewer(); openModal('statusViewerModal');
+        }
+
+        function displayCurrentStatusInViewer() {
+            if (currentStatusViewer.timeoutId) clearTimeout(currentStatusViewer.timeoutId);
+            const avatarEl = document.getElementById('statusViewerAvatar');
+            const nameEl = document.getElementById('statusViewerName');
+            const timeEl = document.getElementById('statusViewerTime');
+            const imageMediaEl = document.getElementById('statusViewerImage');
+            const textMediaEl = document.getElementById('statusViewerText');
+            const captionEl = document.getElementById('statusViewerCaption');
+            const progressBarsContainer = document.getElementById('statusViewerProgressBars');
+
+            avatarEl.src = currentStatusViewer.contactAvatar; nameEl.textContent = currentStatusViewer.contactName;
+            progressBarsContainer.innerHTML = '';
+            currentStatusViewer.statuses.forEach((s, index) => {
+                const barDiv = document.createElement('div'); barDiv.classList.add('status-progress-bar');
+                const progressDiv = document.createElement('div'); progressDiv.classList.add('progress');
+                if (index < currentStatusViewer.currentIndex) progressDiv.style.width = '100%';
+                barDiv.appendChild(progressDiv); progressBarsContainer.appendChild(barDiv);
+            });
+            
+            const statusItem = currentStatusViewer.statuses[currentStatusViewer.currentIndex];
+            if (!statusItem) { closeModal('statusViewerModal'); renderStatusTab(); return; }
+            timeEl.textContent = formatStatusTime(statusItem.timestamp);
+            imageMediaEl.style.display = 'none'; textMediaEl.style.display = 'none';
+            captionEl.style.display = 'none'; captionEl.textContent = '';
+
+            if (statusItem.type === 'image') {
+                imageMediaEl.src = statusItem.content; imageMediaEl.style.display = 'block';
+                if (statusItem.caption) { captionEl.textContent = statusItem.caption; captionEl.style.display = 'block'; }
+            } else if (statusItem.type === 'text') {
+                textMediaEl.innerHTML = escapeHTML(statusItem.content).replace(/\n/g, '<br>');
+                textMediaEl.style.display = 'flex';
+            }
+
+            if (currentStatusViewer.contactName === myUserInfo.name) {
+                if (!statusItem.viewedByMeOnce) { statusItem.viewedByMeOnce = true; 
+                    const originalStatus = myStatuses.find(s => s.id === statusItem.id);
+                    if (originalStatus) originalStatus.viewedByMeOnce = true; }
+            } else {
+                if (!statusItem.viewed) { statusItem.viewed = true;
+                    const contactOriginalStatuses = contactStatuses[currentStatusViewer.contactName];
+                    if(contactOriginalStatuses){ const originalStatus = contactOriginalStatuses.find(s => s.id === statusItem.id);
+                        if(originalStatus) originalStatus.viewed = true; } } }
+            saveStatusesToLocalStorage();
+            
+            const currentProgressBarFill = progressBarsContainer.children[currentStatusViewer.currentIndex]?.querySelector('.progress');
+            if(currentProgressBarFill) {
+                currentProgressBarFill.style.transition = 'none'; currentProgressBarFill.style.width = '0%';
+                void currentProgressBarFill.offsetWidth;
+                currentProgressBarFill.style.transition = `width ${STATUS_VIEW_TIME / 1000}s linear`;
+                currentProgressBarFill.style.width = '100%';
+            }
+            currentStatusViewer.timeoutId = setTimeout(() => { navigateStatus(1, false); }, STATUS_VIEW_TIME);
+        }
+
+        function navigateStatus(direction, userInitiated = false) {
+            if (userInitiated && currentStatusViewer.timeoutId) clearTimeout(currentStatusViewer.timeoutId);
+            currentStatusViewer.currentIndex += direction;
+            if (currentStatusViewer.currentIndex >= currentStatusViewer.statuses.length || currentStatusViewer.currentIndex < 0) {
+                closeModal('statusViewerModal'); renderStatusTab(); return;
+            }
+            displayCurrentStatusInViewer();
+        }
+
+        function saveStatusesToLocalStorage() {
+            localStorage.setItem('myTalkgramStatuses', JSON.stringify(myStatuses));
+            localStorage.setItem('contactTalkgramStatuses', JSON.stringify(contactStatuses));
+        }
+        function loadStatusesFromLocalStorage() {
+            const storedMyStatuses = localStorage.getItem('myTalkgramStatuses');
+            if (storedMyStatuses) { try { myStatuses = JSON.parse(storedMyStatuses); } catch (e) { myStatuses = []; } }
+            const storedContactStatuses = localStorage.getItem('contactTalkgramStatuses');
+            if (storedContactStatuses) { try { contactStatuses = JSON.parse(storedContactStatuses); } catch (e) { contactStatuses = {}; } }
+        }
+
+        function initializeAuthForms() {
+            const registerFormEl = document.getElementById('registerForm');
+            const usernameInputEl = document.getElementById('username');
+            if (usernameInputEl) {
+                usernameInputEl.addEventListener('blur', function() {
+                    if (this.value && !this.value.startsWith('@')) this.value = '@' + this.value.replace(/[^a-zA-Z0-9_]/g, '');
+                    else if (this.value.startsWith('@')) this.value = '@' + this.value.substring(1).replace(/[^a-zA-Z0-9_]/g, '');
+                });
+            }
+            if (registerFormEl) {
+                registerFormEl.addEventListener('submit', function(event) {
+                    event.preventDefault();
+                    const username = usernameInputEl.value; const email = document.getElementById('email').value;
+                    const password = document.getElementById('password').value; const confirmPassword = document.getElementById('confirmPassword').value;
+                    if (!username || !email || !password || !confirmPassword) { alert("الرجاء ملء جميع الحقول."); return; }
+                    if (!username.startsWith('@') || username.length <= 1) { alert("معرف المستخدم يجب أن يبدأ بـ @ وأن يحتوي على أحرف بعد العلامة."); usernameInputEl.focus(); return; }
+                    const usernamePattern = /^@[a-zA-Z0-9_]{3,20}$/;
+                    if (!usernamePattern.test(username)) { alert("معرف المستخدم غير صالح (3-20 حرفًا، أرقام، حروف، '_')."); usernameInputEl.focus(); return; }
+                    if (password !== confirmPassword) { alert("كلمات المرور غير متطابقة."); return; }
+                    
+                    myUserInfo.name = username; // Update user info
+                    myUserInfo.avatar = `https://via.placeholder.com/60/25D366/FFFFFF?text=${username.substring(1,3).toUpperCase()}`; // Simple avatar from username
+                    myUserInfo.statusText = "مرحباً! أنا أستخدم Talkgram."; // Default status text
+                    initializeMyUserInfo(); // Update avatars on screen
+                    updateSettingsUserInfo(); // Update settings page info
+                    
+                    console.log("Register - Username:", username, "Email:", email);
+                    alert("تم إنشاء الحساب بنجاح (محاكاة)!");
+                    showPage('chatsPage'); renderStatusTab();
+                });
+            }
+            const loginFormEl = document.getElementById('loginForm');
+            const loginIdentifierInputEl = document.getElementById('loginIdentifier');
+            if (loginIdentifierInputEl) loginIdentifierInputEl.addEventListener('input', function() { this.classList.toggle('username-style', this.value.startsWith('@')); });
+            if (loginFormEl) {
+                loginFormEl.addEventListener('submit', function(event) {
+                    event.preventDefault();
+                    const identifier = loginIdentifierInputEl.value; const passwordLogin = document.getElementById('passwordLogin').value;
+                    if (!identifier || !passwordLogin) { alert("الرجاء إدخال المعرف وكلمة المرور."); return; }
+                    
+                    if (identifier.startsWith('@')) myUserInfo.name = identifier;
+                    else myUserInfo.name = "مستخدم مسجل"; // Placeholder if email login
+                    myUserInfo.avatar = `https://via.placeholder.com/60/128C7E/FFFFFF?text=${myUserInfo.name.substring(0,2).toUpperCase()}`;
+                    myUserInfo.statusText = "متصل الآن";
+                    initializeMyUserInfo();
+                    updateSettingsUserInfo();
+
+                    console.log("Login - Identifier:", identifier);
+                    alert("تم تسجيل الدخول بنجاح (محاكاة)!");
+                    showPage('chatsPage'); renderStatusTab();
+                });
+            }
+        }
+
+        function logout() {
+            myUserInfo = { name: "اسمك الافتراضي", avatar: "https://via.placeholder.com/60/075E54/FFFFFF?text=??", statusText: "متاح" };
+            myStatuses = [];
+            saveStatusesToLocalStorage();
+            alert("تم تسجيل الخروج (محاكاة)!");
+            showPage('welcomePage');
+            initializeMyUserInfo(); // Reset avatars on screen
+            updateSettingsUserInfo(); // Reset settings page info
+        }
+    </script>
+</body>
+</html>

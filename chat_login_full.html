@@ -1,0 +1,86 @@
+
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>تطبيق دردشة برقم الهاتف</title>
+  <style>
+    body { font-family: Arial; text-align: center; direction: rtl; margin: 40px; }
+    .screen { display: none; }
+    .visible { display: block; }
+    input, select, button { margin: 10px; padding: 10px; width: 80%; max-width: 300px; }
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>
+</head>
+<body>
+
+  <!-- شاشة الترحيب -->
+  <div id="welcomeScreen" class="screen visible">
+    <h1>مرحبًا بك في تطبيق الدردشة</h1>
+    <button onclick="showScreen('phoneScreen')">ابدأ الآن</button>
+  </div>
+
+  <!-- شاشة تسجيل رقم الهاتف -->
+  <div id="phoneScreen" class="screen">
+    <h2>تسجيل الدخول برقم الهاتف</h2>
+    <select id="countryCode">
+      <option value="+966">السعودية</option>
+      <option value="+967">اليمن</option>
+      <option value="+20">مصر</option>
+      <option value="+971">الإمارات</option>
+      <option value="+962">الأردن</option>
+    </select><br>
+    <input type="text" id="phoneNumber" placeholder="ادخل رقمك بدون صفر"><br>
+    <div id="recaptcha-container"></div>
+    <button onclick="sendOTP()">إرسال كود التحقق</button>
+  </div>
+
+  <!-- شاشة إدخال كود OTP -->
+  <div id="otpScreen" class="screen">
+    <h2>أدخل كود التحقق</h2>
+    <input type="text" id="otpCode" placeholder="الكود المرسل إليك">
+    <button onclick="verifyOTP()">تحقق من الكود</button>
+  </div>
+
+  <h3 id="result"></h3>
+
+  <script>
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSy...YOUR_API_KEY...",
+      authDomain: "yourapp.firebaseapp.com",
+      projectId: "yourapp",
+      storageBucket: "yourapp.appspot.com",
+      messagingSenderId: "1234567890",
+      appId: "1:1234567890:web:exampleid"
+    };
+    firebase.initializeApp(firebaseConfig);
+
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(div => div.classList.remove('visible'));
+      document.getElementById(id).classList.add('visible');
+    }
+
+    function sendOTP() {
+      const phone = document.getElementById("countryCode").value + document.getElementById("phoneNumber").value;
+      window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {size: 'invisible'});
+      firebase.auth().signInWithPhoneNumber(phone, window.recaptchaVerifier)
+        .then(confirmationResult => {
+          window.confirmationResult = confirmationResult;
+          alert("تم إرسال الكود");
+          showScreen('otpScreen');
+        }).catch(e => alert(e.message));
+    }
+
+    function verifyOTP() {
+      const code = document.getElementById("otpCode").value;
+      window.confirmationResult.confirm(code)
+        .then(result => {
+          document.getElementById("result").innerText = "تم تسجيل الدخول بنجاح: " + result.user.phoneNumber;
+        }).catch(e => alert("رمز خاطئ أو منتهي"));
+    }
+  </script>
+
+</body>
+</html>

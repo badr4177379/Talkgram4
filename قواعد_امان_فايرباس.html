@@ -1,0 +1,56 @@
+{
+  "rules": {
+    // القواعد العامة لقراءة وكتابة البيانات في قاعدة البيانات
+    ".read": "auth != null",  // السماح بالقراءة للمستخدمين المسجلين
+    ".write": "auth != null", // السماح بالكتابة للمستخدمين المسجلين
+
+    // القواعد الخاصة بالمستخدمين
+    "users": {
+      "$user_id": {
+        ".read": "auth != null",  // السماح للمستخدمين المسجلين بقراءة بيانات المستخدمين
+        ".write": "auth != null && auth.uid === $user_id",  // السماح للمستخدم بكتابة بياناته الشخصية فقط
+        ".indexOn": ["name", "email"]  // فهرسة الاسم والبريد الإلكتروني للبحث بشكل أسرع
+      }
+    },
+
+    // القواعد الخاصة بالمحادثات
+    "chats": {
+      "$chat_id": {
+        // السماح بالقراءة والكتابة فقط للمشاركين في المحادثة
+        ".read": "root.child('chats').child($chat_id).child('users').child(auth.uid).exists()",  // فقط إذا كان المستخدم جزءًا من المحادثة
+        ".write": "root.child('chats').child($chat_id).child('users').child(auth.uid).exists()", // فقط إذا كان المستخدم جزءًا من المحادثة
+        
+        // القواعد الخاصة بالرسائل داخل المحادثة
+        "messages": {
+          "$message_id": {
+            // السماح بالكتابة للمستخدمين المشاركين في المحادثة
+            ".write": "auth != null && root.child('chats').child($chat_id).child('users').child(auth.uid).exists()"
+          }
+        },
+        
+        // القواعد الخاصة بالمستخدمين داخل المحادثة
+        "users": {
+          "$user_id": {
+            // السماح بقراءة بيانات المستخدم فقط من قبل المشاركين في المحادثة
+            ".read": "auth != null && root.child('chats').child($chat_id).child('users').child(auth.uid).exists()", // فقط المشاركون في المحادثة يمكنهم القراءة
+            // السماح بكتابة بيانات المستخدم فقط من قبل المستخدم نفسه
+            ".write": "auth != null && auth.uid === $user_id"  // فقط المستخدم نفسه يمكنه تعديل بياناته
+          }
+        }
+      }
+    },
+
+    // القواعد الخاصة بطلبات المحادثة بين المستخدمين
+    "chatRequests": {
+      "$chatRequest_id": {
+        // السماح بالقراءة والكتابة للمستخدمين الذين أرسلوا أو تلقوا الطلب
+        ".read": "auth != null",
+        ".write": "newData.child('from').val() === auth.uid || newData.child('to').val() === auth.uid",  // السماح بكتابة الطلبات فقط من الأطراف المرسلة أو المتلقية
+        // التأكد من أن حالة الطلب هي إما "قيد الانتظار" أو "مقبول" أو "مرفوض"
+        ".validate": "newData.child('status').val() === 'pending' || newData.child('status').val() === 'accepted' || newData.child('status').val() === 'rejected'",
+        // فهرسة الحقول الهامة لتحسين سرعة البحث (مثل حالة الطلب والمشاركين)
+        ".indexOn": ["from", "to", "status"]
+      }
+    }
+  }
+}

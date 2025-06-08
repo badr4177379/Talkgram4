@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Talkgram - دردشة</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <style>
+    body {
+      background-color: #f0f2f5;
+      direction: rtl;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .msg { padding: 10px 15px; border-radius: 25px; margin: 5px 0; max-width: 75%; display: inline-block; position: relative; }
+    .mine { background-color: #dcf8c6; align-self: flex-end; }
+    .theirs { background-color: #e4e6eb; align-self: flex-start; }
+    .msg-time { font-size: 0.75rem; color: gray; position: absolute; bottom: -16px; left: 10px; }
+    .chat-box { max-height: 60vh; overflow-y: auto; background: #fff; border-radius: 10px; padding: 10px; display: flex; flex-direction: column; }
+    .chat-input { display: flex; gap: 10px; padding: 10px 0; }
+    .chat-input input { flex-grow: 1; }
+    .user-item { display: flex; align-items: center; gap: 10px; padding: 10px; border-bottom: 1px solid #ddd; cursor: pointer; }
+    .avatar { width: 40px; height: 40px; border-radius: 50%; background-color: #ccc; display: flex; align-items: center; justify-content: center; font-size: 18px; color: white; }
+    .user-details { flex-grow: 1; }
+    .user-last { font-size: 0.85rem; color: gray; }
+  </style>
+</head>
+<body>
+<div class="container py-4">
+  <div id="welcome" class="text-center">
+    <h1 class="mb-3">مرحباً بك في Talkgram 📱</h1>
+    <p class="mb-4">تطبيق دردشة بسيط وآمن للتواصل مع أصدقائك</p>
+    <button class="btn btn-primary" onclick="goToLogin()">ابدأ الآن</button>
+  </div>
+
+  <div id="login" class="d-none">
+    <h2 class="mb-4">تسجيل الدخول أو إنشاء حساب</h2>
+    <input type="email" id="email" class="form-control mb-2" placeholder="البريد الإلكتروني">
+    <input type="password" id="password" class="form-control mb-2" placeholder="كلمة المرور">
+    <button class="btn btn-success w-100 mb-2" onclick="login()">تسجيل الدخول</button>
+    <button class="btn btn-secondary w-100" onclick="signup()">تسجيل جديد</button>
+  </div>
+
+  <div id="chatList" class="d-none">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h4 class="mb-0">📂 الدردشات</h4>
+      <button class="btn btn-sm btn-outline-danger" onclick="logout()">تسجيل الخروج</button>
+    </div>
+    <div id="usersList" class="list-group"></div>
+  </div>
+
+  <div id="conversation" class="d-none">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <button class="btn btn-sm btn-outline-secondary" onclick="backToChatList()">⬅ رجوع</button>
+      <h5 class="mb-0">محادثة مع <span id="friendName"></span></h5>
+    </div>
+    <div id="messages" class="chat-box mb-2"></div>
+    <div class="chat-input">
+      <input type="text" id="messageInput" class="form-control" placeholder="اكتب رسالة...">
+      <button class="btn btn-primary" onclick="sendMessage()">إرسال</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  
+  apiKey: "AIzaSyD20R2U6ouZc9WRNAE0fLrTPUviqqX8Pvw",
+  authDomain: "talkgram2.firebaseapp.com",
+  databaseURL: "https://talkgram2-default-rtdb.firebaseio.com",
+  projectId: "talkgram2",
+  storageBucket: "talkgram2.firebasestorage.app",
+  messagingSenderId: "196126389993",
+  appId: "1:196126389993:web:9f549942602c010a602278",
+  measurementId: "G-QKRB9KFED3"
+};
+
+    apiKey: "AIzaSyD20R2U6ouZc9WRNAE0fLrTPUviqqX8Pvw",
+    authDomain: "talkgram2.firebaseapp.com",
+    databaseURL: "https://talkgram2-default-rtdb.firebaseio.com",
+    projectId: "talkgram2",
+    storageBucket: "talkgram2.firebasestorage.app",
+    messagingSenderId: "196126389993",
+    appId: "1:196126389993:web:9f549942602c010a602278"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+  let selectedFriendId = null;
+  let selectedFriendEmail = '';
+
+  function goToLogin() {
+    document.getElementById('welcome').classList.add('d-none');
+    document.getElementById('login').classList.remove('d-none');
+  }
+
+  function logout() {
+    auth.signOut().then(() => location.reload());
+  }
+
+  function showChatList() {
+    document.getElementById('login').classList.add('d-none');
+    document.getElementById('chatList').classList.remove('d-none');
+    const currentUser = auth.currentUser;
+    const usersDiv = document.getElementById('usersList');
+    usersDiv.innerHTML = '';
+
+    db.collection('users').get().then(snapshot => {
+      snapshot.forEach(async doc => {
+        const user = doc.data();
+        if (user.uid !== currentUser.uid) {
+          const messagesQuery = await db.collection('messages')
+            .where("senderId", "in", [currentUser.uid, user.uid])
+            .where("receiverId", "in", [currentUser.uid, user.uid])
+            .orderBy("timestamp", "desc")
+            .limit(1)
+            .get();
+
+          let lastMsg = '', lastTime = '';
+          messagesQuery.forEach(msgDoc => {
+            const msgData = msgDoc.data();
+            lastMsg = msgData.text;
+            const t = msgData.timestamp?.toDate();
+            if (t) lastTime = t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          });
+
+          const div = document.createElement('div');
+          div.className = 'user-item';
+          div.onclick = () => startChatWith(user.uid, user.email);
+
+          const avatar = document.createElement('div');
+          avatar.className = 'avatar';
+          avatar.textContent = user.email.charAt(0).toUpperCase();
+
+          const details = document.createElement('div');
+          details.className = 'user-details';
+          details.innerHTML = `<strong>${user.email}</strong><div class="user-last">${lastMsg || ''}</div>`;
+
+          const time = document.createElement('div');
+          time.className = 'text-muted small';
+          time.textContent = lastTime;
+
+          div.appendChild(avatar);
+          div.appendChild(details);
+          div.appendChild(time);
+          usersDiv.appendChild(div);
+        }
+      });
+    });
+  }
+
+  function login() {
+    const email = document.getElementById('email').value;
+    const pass = document.getElementById('password').value;
+    auth.signInWithEmailAndPassword(email, pass)
+      .then(() => showChatList())
+      .catch(e => alert("❌ فشل تسجيل الدخول: " + e.message));
+  }
+
+  function signup() {
+    const email = document.getElementById('email').value;
+    const pass = document.getElementById('password').value;
+    auth.createUserWithEmailAndPassword(email, pass)
+      .then(userCredential => {
+        const user = userCredential.user;
+        return db.collection('users').doc(user.uid).set({
+          email: user.email,
+          uid: user.uid
+        });
+      })
+      .then(() => showChatList())
+      .catch(e => alert("❌ فشل التسجيل: " + e.message));
+  }
+
+  function backToChatList() {
+    document.getElementById('conversation').classList.add('d-none');
+    document.getElementById('chatList').classList.remove('d-none');
+  }
+
+  function startChatWith(friendId, friendEmail) {
+    selectedFriendId = friendId;
+    selectedFriendEmail = friendEmail;
+    document.getElementById('chatList').classList.add('d-none');
+    document.getElementById('conversation').classList.remove('d-none');
+    document.getElementById('friendName').textContent = friendEmail;
+    listenMessages();
+  }
+
+  function sendMessage() {
+    const msg = document.getElementById('messageInput').value;
+    const senderId = auth.currentUser.uid;
+    const receiverId = selectedFriendId;
+    if (!receiverId || !msg.trim()) return;
+
+    db.collection('messages').add({
+      text: msg,
+      senderId,
+      receiverId,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    document.getElementById('messageInput').value = '';
+  }
+
+  function listenMessages() {
+    const currentUserId = auth.currentUser.uid;
+    const friendId = selectedFriendId;
+    db.collection('messages')
+      .where("senderId", "in", [currentUserId, friendId])
+      .where("receiverId", "in", [currentUserId, friendId])
+      .orderBy("timestamp")
+      .onSnapshot(snapshot => {
+        const msgs = document.getElementById('messages');
+        msgs.innerHTML = '';
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const div = document.createElement('div');
+          div.className = 'msg ' + (data.senderId === currentUserId ? 'mine' : 'theirs');
+          const time = data.timestamp?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          div.innerHTML = `${data.text}<div class='msg-time'>${time || ''}</div>`;
+          msgs.appendChild(div);
+        });
+        msgs.scrollTop = msgs.scrollHeight;
+      });
+  }
+
+  auth.onAuthStateChanged(user => {
+    if (user) showChatList();
+  });
+</script>
+</body>
+</html>

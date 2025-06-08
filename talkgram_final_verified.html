@@ -1,0 +1,192 @@
+
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>تطبيق دردشة - Talkgram</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      direction: rtl;
+      background-color: #ece5dd;
+    }
+    .container {
+      max-width: 100%;
+      padding: 20px;
+      background-color: #fff;
+      min-height: 100vh;
+    }
+    h2 {
+      color: #075e54;
+      text-align: center;
+    }
+    .screen {
+      display: none;
+    }
+    .visible {
+      display: block;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: #25d366;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+    }
+    button:hover {
+      background-color: #20b954;
+    }
+    #chatBox {
+      background-color: #f0f0f0;
+      min-height: 200px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .message {
+      background-color: #dcf8c6;
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 8px;
+    }
+    #result {
+      color: green;
+      text-align: center;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>
+</head>
+<body>
+  <div class="container">
+    <!-- شاشة إدخال رقم الهاتف -->
+    <div id="phoneScreen" class="screen visible">
+      <h2>أدخل رقم هاتفك</h2>
+      <select id="countryCode">
+        <option value="+966">السعودية</option>
+        <option value="+967">اليمن</option>
+        <option value="+20">مصر</option>
+        <option value="+971">الإمارات</option>
+        <option value="+962">الأردن</option>
+      </select>
+      <input id="phoneNumber" type="text" placeholder="أدخل رقمك بدون صفر" />
+      <div id="recaptcha-container"></div>
+      <button onclick="sendOTP()">إرسال الكود</button>
+    </div>
+
+    <!-- شاشة إدخال كود التحقق -->
+    <div id="otpScreen" class="screen">
+      <h2>أدخل كود التحقق</h2>
+      <input id="otpCode" type="text" placeholder="أدخل الكود المرسل" />
+      <button onclick="verifyOTP()">تحقق</button>
+    </div>
+
+    <!-- شاشة الدردشة -->
+    <div id="chatScreen" class="screen">
+      <h2>مرحبا بك في الدردشة</h2>
+      <div id="chatBox"></div>
+      <input id="chatInput" type="text" placeholder="اكتب رسالتك..." />
+      <button onclick="sendMessage()">إرسال</button>
+    </div>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyD20R2U6ouZc9WRNAE0fLrTPUviqqX8Pvw",
+      authDomain: "talkgram2.firebaseapp.com",
+      databaseURL: "https://talkgram2-default-rtdb.firebaseio.com",
+      projectId: "talkgram2",
+      storageBucket: "talkgram2.firebasestorage.app",
+      messagingSenderId: "196126389993",
+      appId: "1:196126389993:web:9f549942602c010a602278",
+      measurementId: "G-QKRB9KFED3"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    let currentUser = "";
+    let recaptchaVerifier;
+
+    function showScreen(screenId) {
+      document.querySelectorAll(".screen").forEach((el) => el.classList.remove("visible"));
+      document.getElementById(screenId).classList.add("visible");
+    }
+
+    function sendOTP() {
+      const fullPhone = document.getElementById("countryCode").value + document.getElementById("phoneNumber").value;
+      currentUser = fullPhone;
+
+      if (!recaptchaVerifier) {
+        recaptchaVerifier = new firebase.auth.RecaptchaVerifier("recaptcha-container", {
+          size: "invisible"
+        });
+      }
+
+      firebase.auth().signInWithPhoneNumber(fullPhone, recaptchaVerifier)
+        .then((confirmationResult) => {
+          window.confirmationResult = confirmationResult;
+          alert("✅ تم إرسال الكود بنجاح");
+          showScreen("otpScreen");
+        })
+        .catch((error) => {
+          alert("❌ خطأ: " + error.message);
+        });
+    }
+
+    function verifyOTP() {
+      const code = document.getElementById("otpCode").value;
+      window.confirmationResult.confirm(code)
+        .then((result) => {
+          document.getElementById("result").innerText = "تم تسجيل الدخول بنجاح!";
+          currentUser = result.user.phoneNumber;
+          showScreen("chatScreen");
+          listenForMessages();
+        })
+        .catch((error) => {
+          alert("❌ الكود غير صحيح أو منتهي: " + error.message);
+        });
+    }
+
+    function sendMessage() {
+      const text = document.getElementById("chatInput").value;
+      if (!text.trim()) return;
+
+      db.ref("messages").push({
+        from: currentUser,
+        text: text,
+        timestamp: Date.now()
+      });
+
+      document.getElementById("chatInput").value = "";
+    }
+
+    function listenForMessages() {
+      const chatBox = document.getElementById("chatBox");
+      chatBox.innerHTML = "";
+      db.ref("messages").on("child_added", (snapshot) => {
+        const msg = snapshot.val();
+        const div = document.createElement("div");
+        div.className = "message";
+        div.textContent = msg.from + ": " + msg.text;
+        chatBox.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>

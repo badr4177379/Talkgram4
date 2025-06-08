@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شبكة اجتماعية</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-storage-compat.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f0f2f5;
+            direction: rtl;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+    .like-active {
+    color: #1877f2;
+}
+
+        .input-field {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+
+        .btn {
+            background: #1877f2;
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .profile-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .message-icon {
+            font-size: 24px;
+            position: fixed;
+            top: 10px;
+            left: 70px;
+            cursor: pointer;
+            color: #1877f2;
+            transition: transform 0.3s;
+        }
+
+        .message-icon:hover {
+            transform: scale(1.2);
+        }
+
+        .post {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .post-author {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .post-author img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .interaction-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+
+        .interaction-buttons i {
+            cursor: pointer;
+        }
+
+        .comments-container {
+            margin-top: 10px;
+            display: none;
+        }
+
+        #loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: block;
+        }
+
+        .like-active {
+            color: #1877f2;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading">
+        <img src="https://i.gifer.com/YCZH.gif" alt="Loading...">
+    </div>
+
+    <div id="loginContainer" class="container" style="display:none;">
+        <h1>تسجيل الدخول</h1>
+        <input type="email" id="email" class="input-field" placeholder="البريد الإلكتروني">
+        <input type="password" id="password" class="input-field" placeholder="كلمة المرور">
+        <button class="btn" onclick="login()">تسجيل الدخول</button>
+        <p style="text-align: center; margin-top: 10px;">
+            <span>ليس لديك حساب؟</span>
+            <button class="btn" onclick="showRegisterPage()">إنشاء حساب</button>
+        </p>
+    </div>
+
+    <div id="registerContainer" class="container" style="display:none;">
+        <h1>إنشاء حساب</h1>
+        <input type="text" id="firstName" class="input-field" placeholder="الاسم الأول" required>
+        <input type="text" id="lastName" class="input-field" placeholder="اسم العائلة" required>
+        <input type="email" id="registerEmail" class="input-field" placeholder="البريد الإلكتروني" required>
+        <input type="password" id="registerPassword" class="input-field" placeholder="كلمة المرور" required>
+        <input type="password" id="confirmPassword" class="input-field" placeholder="إعادة كتابة كلمة المرور" required>
+        <button class="btn" onclick="register()">تسجيل</button>
+        <p style="text-align: center; margin-top: 10px;">
+            <span>لديك حساب بالفعل؟</span>
+            <button class="btn" onclick="showLoginPage()">تسجيل الدخول</button>
+        </p>
+    </div>
+
+    <div id="mainContainer" class="container" style="display:none;">
+        <h1>الصفحة الرئيسية</h1>
+        <textarea id="postContent" class="input-field" placeholder="ماذا تريد أن تنشر؟" rows="3"></textarea>
+        <input type="file" id="postImage" accept="image/*" class="input-field">
+        <button class="btn" onclick="addPost()">نشر</button>
+        <div id="postsContainer"></div>
+        <img src="https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&s=150" alt="Profile Icon" class="profile-icon" id="profileIcon" onclick="showProfilePage()">
+        <i class="fas fa-comments message-icon" onclick="showMessagesPage()"></i>
+    </div>
+
+    <div id="profilePage" class="container" style="display:none;">
+        <div class="profile-page">
+            <h2>صفحة البروفايل</h2>
+            <p><strong>الاسم:</strong> <span id="profileName"></span></p>
+            <p><strong>البريد الإلكتروني:</strong> <span id="profileEmail"></span></p>
+            <p><strong>تاريخ التسجيل:</strong> <span id="profileDate"></span></p>
+            <button class="btn" onclick="backToMainPage()">العودة إلى الصفحة الرئيسية</button>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBKVFDMMopyD7NiFSfTFRqB_0uPQ8BR4aA",
+            authDomain: "amine-5b831.firebaseapp.com",
+            databaseURL: "https://amine-5b831-default-rtdb.firebaseio.com",
+            projectId: "amine-5b831",
+            storageBucket: "amine-5b831.appspot.com",
+            messagingSenderId: "58684860181",
+            appId: "1:58684860181:web:7e0b499b3c5ff861776b1c"
+        };
+
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
+        const storage = firebase.storage();
+
+        let currentUser = null;
+
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function checkAuth() {
+            auth.onAuthStateChanged(user => {
+                hideLoading();
+                if (user) {
+                    currentUser = user;
+                    showMainPage();
+                } else {
+                    showLoginPage();
+                }
+            });
+        }
+
+        function showLoginPage() {
+            document.getElementById('loginContainer').style.display = 'block';
+            document.getElementById('registerContainer').style.display = 'none';
+            document.getElementById('mainContainer').style.display = 'none';
+            document.getElementById('profileIcon').style.display = 'none';
+        }
+
+        function showRegisterPage() {
+            document.getElementById('loginContainer').style.display = 'none';
+            document.getElementById('registerContainer').style.display = 'block';
+        }
+
+        function showMainPage() {
+            document.getElementById('loginContainer').style.display = 'none';
+            document.getElementById('registerContainer').style.display = 'none';
+            document.getElementById('mainContainer').style.display = 'block';
+            document.getElementById('profileIcon').style.display = 'block';
+            loadPosts();
+        }
+
+        function loadPosts() {
+            db.ref('posts').orderByChild('timestamp').limitToLast(100).on('child_added', snapshot => {
+                const post = snapshot.val();
+                displayPost(snapshot.key, post);
+            });
+        }
+
+        function displayPost(postId, post) {
+            const postsContainer = document.getElementById('postsContainer');
+            const postElement = document.createElement('div');
+            postElement.className = 'post';
+
+            const profileImage = post.authorProfile || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&s=150';
+            
+            const likesCount = post.likes ? Object.keys(post.likes).length : 0;
+            const commentsCount = post.comments ? Object.keys(post.comments).length : 0;
+            
+            postElement.innerHTML = `
+                <div class="post-author">
+                    <img src="${profileImage}" alt="Profile Image">
+                    <div>
+                        <h3 style="margin: 0;">${post.authorName}</h3>
+                        <small>${new Date(post.timestamp).toLocaleString()}</small>
+                    </div>
+                </div>
+                <p>${post.content}</p>
+                ${post.imageUrl ? `<img src="${post.imageUrl}" class="post-image" style="width: 100%; height: auto; border-radius: 8px;">` : ''}
+                <div class="interaction-buttons">
+                    <i class="fas fa-thumbs-up like ${post.likes && post.likes[currentUser.uid] ? 'like-active' : ''}" id="like-${postId}" onclick="toggleLike('${postId}')"> إعجاب (${likesCount})
+                    </i>
+                    <i class="fas fa-comment" onclick="toggleComments('${postId}')"> تعليق (${commentsCount})</i>
+                </div>
+                <div class="comments-container" id="comments-${postId}" style="display:none;">
+                    <textarea class="input-field" placeholder="أضف تعليقك هنا..." id="comment-input-${postId}"></textarea>
+                    <button class="btn" onclick="addComment('${postId}')">إرسال تعليق</button>
+                    <div id="comments-list-${postId}"></div>
+                </div>
+            `;
+            postsContainer.prepend(postElement);  // Adding new posts at the top
+
+            // Load comments for the post
+            db.ref(`posts/${postId}/comments`).on('child_added', snapshot => {
+                const comment = snapshot.val();
+                displayComment(postId, comment);
+            });
+
+            // Update likes count when a like is toggled
+            db.ref(`posts/${postId}/likes`).on('value', snapshot => {
+                const likes = snapshot.val();
+                const likesCountUpdated = likes ? Object.keys(likes).length : 0;
+                document.getElementById(`like-${postId}`).textContent = `إعجاب (${likesCountUpdated})`;
+            });
+
+            // Update comments count dynamically
+            db.ref(`posts/${postId}/comments`).on('value', snapshot => {
+                const comments = snapshot.val();
+                const commentsCountUpdated = comments ? Object.keys(comments).length : 0;
+                document.querySelector(`#comments-${postId} .interaction-buttons i`).textContent = `تعليق (${commentsCountUpdated})`;
+            });
+        }
+
+        function displayComment(postId, comment) {
+            const commentList = document.getElementById(`comments-list-${postId}`);
+            const commentElement = document.createElement('div');
+            commentElement.className = 'comment';
+            commentElement.innerHTML = `<p><strong>${comment.authorName}:</strong> ${comment.content}</p>`;
+            commentList.appendChild(commentElement);
+        }
+
+        function toggleComments(postId) {
+            const commentsContainer = document.getElementById(`comments-${postId}`);
+            commentsContainer.style.display = commentsContainer.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function addComment(postId) {
+            const commentInput = document.getElementById(`comment-input-${postId}`).value;
+            if (commentInput.trim() !== '') {
+                const commentData = {
+                    authorName: currentUser.displayName,
+                    content: commentInput,
+                    timestamp: Date.now()
+                };
+                db.ref(`posts/${postId}/comments`).push(commentData);
+                document.getElementById(`comment-input-${postId}`).value = '';
+            }
+        }
+
+        function toggleLike(postId) {
+            const postRef = db.ref(`posts/${postId}/likes`);
+            const likeRef = postRef.child(currentUser.uid);
+
+            likeRef.once('value', snapshot => {
+                if (snapshot.exists()) {
+                    likeRef.remove(); // Remove like
+                } else {
+                    likeRef.set(true); // Add like
+                }
+            });
+        }
+
+        function addPost() {
+            const postContent = document.getElementById('postContent').value;
+            const postImage = document.getElementById('postImage').files[0];
+
+            if (postContent.trim() !== '') {
+                showLoading();
+
+                const postData = {
+                    authorName: currentUser.displayName,
+                    authorProfile: currentUser.photoURL,
+                    content: postContent,
+                    timestamp: Date.now(),
+                    likes: {},
+                    comments: {}
+                };
+
+                let uploadTask = null;
+
+                if (postImage) {
+                    const storageRef = storage.ref(`posts/${currentUser.uid}/${Date.now()}_${postImage.name}`);
+                    uploadTask = storageRef.put(postImage);
+
+                    uploadTask.on('state_changed', snapshot => {
+                        // Optionally track progress
+                    }, error => {
+                        console.error('Error uploading image:', error);
+                        hideLoading();
+                    }, () => {
+                        uploadTask.snapshot.ref.getDownloadURL().then(url => {
+                            postData.imageUrl = url;
+                            savePost(postData);
+                        });
+                    });
+                } else {
+                    savePost(postData);
+                }
+            }
+        }
+
+        function savePost(postData) {
+            const postsRef = db.ref('posts');
+            postsRef.push(postData);
+            document.getElementById('postContent').value = '';
+            document.getElementById('postImage').value = '';
+            hideLoading();
+        }
+
+        function showProfilePage() {
+            document.getElementById('profileName').textContent = currentUser.displayName;
+            document.getElementById('profileEmail').textContent = currentUser.email;
+            document.getElementById('profileDate').textContent = new Date(currentUser.metadata.creationTime).toLocaleDateString();
+            document.getElementById('profilePage').style.display = 'block';
+            document.getElementById('mainContainer').style.display = 'none';
+        }
+
+        function backToMainPage() {
+            document.getElementById('profilePage').style.display = 'none';
+            document.getElementById('mainContainer').style.display = 'block';
+        }
+
+        function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            if (email && password) {
+                showLoading();
+                auth.signInWithEmailAndPassword(email, password)
+                    .then(userCredential => {
+                        currentUser = userCredential.user;
+                        showMainPage();
+                    })
+                    .catch(error => {
+                        console.error('Error logging in:', error);
+                        hideLoading();
+                    });
+            }
+        }
+
+        function register() {
+            const firstName = document.getElementById('firstName').value;
+            const lastName = document.getElementById('lastName').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (password === confirmPassword) {
+                showLoading();
+                auth.createUserWithEmailAndPassword(email, password)
+                    .then(userCredential => {
+                        currentUser = userCredential.user;
+                        currentUser.updateProfile({
+                            displayName: `${firstName} ${lastName}`
+                        }).then(() => {
+                            showMainPage();
+                        }).catch(error => {
+                            console.error('Error updating profile:', error);
+                            hideLoading();
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error registering:', error);
+                        hideLoading();
+                    });
+            } else {
+                alert('كلمات المرور غير متطابقة');
+            }
+        }
+function toggleLike(postId) {
+    const postRef = db.ref(`posts/${postId}/likes`);
+    const likeRef = postRef.child(currentUser.uid);
+    const likeButton = document.getElementById(`like-${postId}`);
+
+    likeRef.once('value', snapshot => {
+        if (snapshot.exists()) {
+            likeRef.remove(); // Remove like
+            likeButton.classList.remove('like-active'); // Remove active state
+        } else {
+            likeRef.set(true); // Add like
+            likeButton.classList.add('like-active'); // Add active state
+        }
+    });
+}
+        checkAuth();
+    </script>
+</body>
+</html>

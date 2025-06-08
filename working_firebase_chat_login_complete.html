@@ -1,0 +1,142 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>دردشة فورية</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <style>
+    body { font-family: sans-serif; direction: rtl; text-align: center; background: #f0f0f0; padding: 20px; }
+    .chat-box { max-width: 600px; margin: auto; background: #fff; padding: 20px; border-radius: 10px; display: none; }
+    .messages { height: 300px; overflow-y: scroll; background: #eee; padding: 10px; margin-bottom: 10px; text-align: right; }
+    .msg { margin: 5px; padding: 8px; background: #d1e7dd; border-radius: 5px; }
+    input, button { padding: 10px; margin: 5px; width: 90%; }
+    #search-results { list-style: none; padding: 0; margin-top: 5px; background: #fff; border: 1px solid #ccc; max-height: 100px; overflow-y: auto; }
+    #search-results li { padding: 8px; border-bottom: 1px solid #eee; cursor: pointer; }
+    #search-results li:hover { background: #def; }
+  </style>
+</head>
+<body>
+
+<div id="authSection">
+  <h3>تسجيل الدخول</h3>
+  <input type="email" id="loginEmail" placeholder="البريد الإلكتروني"><br>
+  <input type="password" id="loginPassword" placeholder="كلمة المرور"><br>
+  <button onclick="loginUser()">دخول</button>
+  <hr>
+  <h4>تسجيل حساب جديد</h4>
+  <input type="email" id="regEmail" placeholder="البريد الإلكتروني"><br>
+  <input type="password" id="regPassword" placeholder="كلمة المرور"><br>
+  <button onclick="registerUser()">تسجيل</button>
+</div>
+
+<div id="chatSection" class="chat-box">
+  <h3>مرحبا، <span id="userLabel"></span></h3>
+  <input type="text" id="user-search-input" placeholder="ابحث عن مستخدم...">
+  <ul id="search-results"></ul>
+  <input type="text" id="chatId" placeholder="اسم المستخدم الآخر">
+  <div class="messages" id="messages"></div>
+  <input type="text" id="message" placeholder="اكتب رسالة...">
+  <button id="sendMessageBtn">إرسال</button>
+</div>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAVq5MZLFjXMkmLSDj9wCF8pAoONyN7DM",
+    authDomain: "badrbadr775-8a858.firebaseapp.com",
+    databaseURL: "https://badrbadr775-8a858-default-rtdb.firebaseio.com/",
+    projectId: "badrbadr775-8a858",
+    storageBucket: "badrbadr775-8a858.appspot.com",
+    messagingSenderId: "246499810028",
+    appId: "1:246499810028:web:xxxxxxx"
+  };
+  firebase.initializeApp(firebaseConfig);
+
+  firebase.auth().onAuthStateChanged(function(user) {
+    if (user) {
+      document.getElementById('authSection').style.display = 'none';
+      document.getElementById('chatSection').style.display = 'block';
+      const uname = user.email.split('@')[0];
+      document.getElementById('userLabel').innerText = uname;
+      document.getElementById('username')?.value = uname;
+    } else {
+      document.getElementById('authSection').style.display = 'block';
+      document.getElementById('chatSection').style.display = 'none';
+    }
+  });
+
+  function loginUser() {
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    firebase.auth().signInWithEmailAndPassword(email, password)
+      .catch(error => alert(error.message));
+  }
+
+  function registerUser() {
+    const email = document.getElementById('regEmail').value;
+    const password = document.getElementById('regPassword').value;
+    firebase.auth().createUserWithEmailAndPassword(email, password)
+      .catch(error => alert(error.message));
+  }
+
+  function getChatId(u1, u2) {
+    return [u1, u2].sort().join("_");
+  }
+
+  document.getElementById('sendMessageBtn').addEventListener('click', function () {
+    const sender = firebase.auth().currentUser?.email.split('@')[0];
+    const receiver = document.getElementById('chatId').value.trim();
+    const text = document.getElementById('message').value.trim();
+    if (!sender || !receiver || !text) return;
+    const chatId = getChatId(sender, receiver);
+    firebase.database().ref("messages/" + chatId).push({
+      sender: sender,
+      text: text,
+      timestamp: Date.now()
+    });
+    document.getElementById('message').value = "";
+  });
+
+  document.getElementById('chatId').addEventListener('change', function () {
+    const sender = firebase.auth().currentUser?.email.split('@')[0];
+    const receiver = this.value.trim();
+    const chatId = getChatId(sender, receiver);
+    const box = document.getElementById("messages");
+    box.innerHTML = "";
+    firebase.database().ref("messages/" + chatId).off();
+    firebase.database().ref("messages/" + chatId).on("child_added", function(snapshot) {
+      const msg = snapshot.val();
+      const div = document.createElement("div");
+      div.className = "msg";
+      div.textContent = msg.sender + ": " + msg.text;
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+    });
+  });
+
+  document.getElementById('user-search-input').addEventListener('input', function () {
+    const query = this.value.trim().toLowerCase();
+    const resultBox = document.getElementById('search-results');
+    resultBox.innerHTML = "";
+    if (!query) return;
+
+    firebase.database().ref("users").orderByChild("username")
+      .startAt(query).endAt(query + "\uf8ff").once("value", function(snapshot) {
+        snapshot.forEach(child => {
+          const user = child.val();
+          const li = document.createElement("li");
+          li.textContent = user.username;
+          li.onclick = function () {
+            document.getElementById("chatId").value = user.username;
+            document.getElementById("chatId").dispatchEvent(new Event('change'));
+            resultBox.innerHTML = "";
+          };
+          resultBox.appendChild(li);
+        });
+      });
+  });
+</script>
+</body>
+</html>
